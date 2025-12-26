@@ -1,10 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import React from 'react';
 import { Platform } from 'react-native';
 
 import { CenterTabButton } from '@/components/center-tab-button';
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -56,16 +55,17 @@ export default function TabLayout() {
         tabBarIconStyle: {
           marginTop: 4,
         },
+        tabBarShowLabel: true,
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Inicio',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={focused ? 26 : 24}
-              name={focused ? 'house.fill' : 'house'}
-              color={color}
+            <Ionicons 
+              name={focused ? "wallet" : "wallet-outline"} 
+              size={focused ? 26 : 24} 
+              color={focused ? color : (isDark ? '#666' : '#999')} 
             />
           ),
         }}
@@ -73,7 +73,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="add-transaction"
         options={{
-          title: 'Agregar',
+          title: '',
           tabBarButton: (props) => <CenterTabButton {...props} />,
           tabBarIcon: () => null,
           tabBarLabel: '',
@@ -84,10 +84,10 @@ export default function TabLayout() {
         options={{
           title: 'Estadísticas',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={focused ? 26 : 24}
-              name={focused ? 'chart.bar.fill' : 'chart.bar'}
-              color={color}
+            <Ionicons 
+              name={focused ? "analytics" : "analytics-outline"} 
+              size={focused ? 26 : 24} 
+              color={focused ? color : (isDark ? '#666' : '#999')} 
             />
           ),
         }}

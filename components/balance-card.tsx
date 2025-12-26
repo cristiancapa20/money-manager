@@ -5,15 +5,18 @@ interface BalanceCardProps {
   balance: number;
   income: number;
   expenses: number;
+  cardName?: string;
+  cardColor?: string;
 }
 
-export function BalanceCard({ balance, income, expenses }: BalanceCardProps) {
+export function BalanceCard({ balance, income, expenses, cardName, cardColor }: BalanceCardProps) {
   const theme = useColorScheme() ?? 'light';
+  const backgroundColor = cardColor || (theme === 'dark' ? '#1E40AF' : '#1E3A8A');
 
   return (
-    <View style={[styles.card, theme === 'dark' ? styles.cardDark : styles.cardLight]}>
+    <View style={[styles.card, { backgroundColor }]}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Balance Total</Text>
+        <Text style={styles.cardTitle}>{cardName || 'Balance Total'}</Text>
       </View>
       <View style={styles.cardBody}>
         <Text style={styles.balanceAmount}>
@@ -40,9 +43,9 @@ export function BalanceCard({ balance, income, expenses }: BalanceCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 20,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 0,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -52,26 +55,20 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  cardLight: {
-    backgroundColor: '#1E3A8A',
-  },
-  cardDark: {
-    backgroundColor: '#1E40AF',
-  },
   cardHeader: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#E0E7FF',
     opacity: 0.8,
     fontWeight: '500',
   },
   cardBody: {
-    marginBottom: 30,
+    marginBottom: 24,
   },
   balanceAmount: {
-    fontSize: 42,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 8,
@@ -79,7 +76,7 @@ const styles = StyleSheet.create({
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 20,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.2)',
   },
@@ -87,24 +84,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   incomeLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#4ADE80',
     opacity: 0.9,
     marginBottom: 4,
   },
   incomeValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#4ADE80',
   },
   expenseLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#F87171',
     opacity: 0.9,
     marginBottom: 4,
   },
   expenseValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#F87171',
   },

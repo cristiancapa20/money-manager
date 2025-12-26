@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 
+import { CenterTabButton } from '@/components/center-tab-button';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
@@ -67,6 +68,15 @@ export default function TabLayout() {
               color={color}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="add-transaction"
+        options={{
+          title: 'Agregar',
+          tabBarButton: (props) => <CenterTabButton {...props} />,
+          tabBarIcon: () => null,
+          tabBarLabel: '',
         }}
       />
       <Tabs.Screen

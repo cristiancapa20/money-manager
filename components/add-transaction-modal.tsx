@@ -1,8 +1,9 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { categoryMap } from '@/utils/categories';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Modal,
     ScrollView,
@@ -16,37 +17,31 @@ import {
 export type TransactionType = 'income' | 'expense';
 
 export interface Transaction {
+  id?: string;
   title: string;
   description: string;
   amount: number;
   type: TransactionType;
   category: string;
+  cardId: string;
 }
 
 interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (transaction: Transaction) => void;
+  cardId: string | null;
+  editingTransaction?: Transaction | null;
 }
 
-const categories = [
-  'Alimentación',
-  'Transporte',
-  'Entretenimiento',
-  'Salud',
-  'Educación',
-  'Servicios',
-  'Compras',
-  'Salario',
-  'Freelance',
-  'Inversiones',
-  'Otros',
-];
+const categories = Object.values(categoryMap);
 
 export function AddTransactionModal({
   visible,
   onClose,
   onSave,
+  cardId,
+  editingTransaction,
 }: AddTransactionModalProps) {
   const theme = useColorScheme() ?? 'light';
   const [title, setTitle] = useState('');
@@ -55,17 +50,32 @@ export function AddTransactionModal({
   const [type, setType] = useState<TransactionType>('expense');
   const [category, setCategory] = useState('');
 
+  // Cargar datos de la transacción cuando se está editando
+  useEffect(() => {
+    if (editingTransaction) {
+      setTitle(editingTransaction.title);
+      setDescription(editingTransaction.description);
+      setAmount(editingTransaction.amount.toString());
+      setType(editingTransaction.type);
+      setCategory(editingTransaction.category);
+    } else {
+      handleReset();
+    }
+  }, [editingTransaction, visible]);
+
   const handleSave = () => {
-    if (!title.trim() || !amount.trim() || !category) {
+    if (!title.trim() || !amount.trim() || !category || !cardId) {
       return;
     }
 
     const transaction: Transaction = {
+      id: editingTransaction?.id, // Mantener el ID si está editando
       title: title.trim(),
       description: description.trim(),
       amount: parseFloat(amount) || 0,
       type,
       category,
+      cardId: cardId || editingTransaction?.cardId || '',
     };
 
     onSave(transaction);
@@ -94,7 +104,9 @@ export function AddTransactionModal({
       <View style={styles.modalOverlay}>
         <ThemedView style={styles.modalContent}>
           <View style={[styles.modalHeader, theme === 'dark' && styles.modalHeaderDark]}>
-            <ThemedText type="title">Nueva Transacción</ThemedText>
+            <ThemedText type="title">
+              {editingTransaction ? 'Editar Transacción' : 'Nueva Transacción'}
+            </ThemedText>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={theme === 'light' ? '#000' : '#fff'} />
             </TouchableOpacity>
@@ -210,29 +222,44 @@ export function AddTransactionModal({
               <ThemedText type="subtitle" style={styles.label}>
                 Categoría
               </ThemedText>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.categoriesContainer}>
-                {categories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[
-                      styles.categoryButton,
-                      category === cat && styles.categoryButtonActive,
-                      theme === 'dark' && styles.categoryButtonDark,
-                    ]}
-                    onPress={() => setCategory(cat)}>
-                    <Text
+              <View style={styles.categoriesGrid}>
+                {categories.map((cat) => {
+                  const isSelected = category === cat.name;
+                  return (
+                    <TouchableOpacity
+                      key={cat.name}
                       style={[
-                        styles.categoryButtonText,
-                        category === cat && styles.categoryButtonTextActive,
-                      ]}>
-                      {cat}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                        styles.categoryButton,
+                        isSelected && styles.categoryButtonActive,
+                        theme === 'dark' && styles.categoryButtonDark,
+                        isSelected && { borderColor: cat.color },
+                      ]}
+                      onPress={() => setCategory(cat.name)}>
+                      <View
+                        style={[
+                          styles.categoryIconContainer,
+                          { backgroundColor: `${cat.color}15` },
+                          isSelected && { backgroundColor: `${cat.color}30` },
+                        ]}>
+                        <Ionicons
+                          name={cat.icon}
+                          size={24}
+                          color={cat.color}
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.categoryButtonText,
+                          { color: cat.color },
+                          isSelected && styles.categoryButtonTextSelected,
+                        ]}
+                        numberOfLines={1}>
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           </ScrollView>
 
@@ -247,10 +274,10 @@ export function AddTransactionModal({
               style={[
                 styles.button,
                 styles.saveButton,
-                (!title.trim() || !amount.trim() || !category) && styles.saveButtonDisabled,
+                (!title.trim() || !amount.trim() || !category || !cardId) && styles.saveButtonDisabled,
               ]}
               onPress={handleSave}
-              disabled={!title.trim() || !amount.trim() || !category}>
+              disabled={!title.trim() || !amount.trim() || !category || !cardId}>
               <Text style={styles.saveButtonText}>Guardar</Text>
             </TouchableOpacity>
           </View>
@@ -347,33 +374,41 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: 'top',
   },
-  categoriesContainer: {
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
     marginTop: 8,
   },
   categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    width: '30%',
+    minWidth: 90,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
     backgroundColor: '#F3F4F6',
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   categoryButtonDark: {
     backgroundColor: '#1F1F1F',
-    borderColor: '#333',
   },
   categoryButtonActive: {
-    backgroundColor: '#1E3A8A',
-    borderColor: '#1E3A8A',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+  },
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   categoryButtonText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  categoryButtonTextActive: {
-    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   modalFooter: {
     flexDirection: 'row',

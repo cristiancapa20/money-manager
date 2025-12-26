@@ -2,16 +2,22 @@ import type { Transaction } from '@/components/add-transaction-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getCategoryInfo } from '@/utils/categories';
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface TransactionListProps {
   transactions: Transaction[];
-  balanceCard?: ReactNode;
+  balanceCard?: ReactNode | null;
+  onEditTransaction?: (transaction: Transaction) => void;
 }
 
-export function TransactionList({ transactions, balanceCard }: TransactionListProps) {
+export function TransactionList({
+  transactions,
+  balanceCard,
+  onEditTransaction,
+}: TransactionListProps) {
   const theme = useColorScheme() ?? 'light';
 
   // Ordenar transacciones: más recientes primero
@@ -20,7 +26,7 @@ export function TransactionList({ transactions, balanceCard }: TransactionListPr
   const ListHeaderComponent = () => (
     <View style={styles.headerContainer}>
       {balanceCard}
-      {transactions.length > 0 && (
+      {balanceCard && transactions.length > 0 && (
         <ThemedText type="subtitle" style={styles.title}>
           Transacciones
         </ThemedText>
@@ -31,13 +37,17 @@ export function TransactionList({ transactions, balanceCard }: TransactionListPr
   const ListEmptyComponent = () => (
     <ThemedView style={styles.emptyContainer}>
       <Ionicons
-        name="receipt-outline"
+        name={balanceCard ? "receipt-outline" : "card-outline"}
         size={48}
         color={theme === 'light' ? '#9CA3AF' : '#6B7280'}
       />
-      <ThemedText style={styles.emptyText}>No hay transacciones</ThemedText>
+      <ThemedText style={styles.emptyText}>
+        {balanceCard ? 'No hay transacciones' : 'Selecciona o crea una tarjeta'}
+      </ThemedText>
       <ThemedText style={styles.emptySubtext}>
-        Presiona el botón + para agregar una
+        {balanceCard
+          ? 'Presiona el botón + para agregar una'
+          : 'Usa el selector de tarjetas para comenzar'}
       </ThemedText>
     </ThemedView>
   );
@@ -47,7 +57,12 @@ export function TransactionList({ transactions, balanceCard }: TransactionListPr
       <FlatList
         data={sortedTransactions}
         keyExtractor={(item, index) => `${item.title}-${index}-${item.amount}`}
-        renderItem={({ item }) => <TransactionItem transaction={item} />}
+        renderItem={({ item }) => (
+          <TransactionItem
+            transaction={item}
+            onEdit={onEditTransaction}
+          />
+        )}
         ListHeaderComponent={ListHeaderComponent}
         ListEmptyComponent={ListEmptyComponent}
         showsVerticalScrollIndicator={false}
@@ -59,13 +74,15 @@ export function TransactionList({ transactions, balanceCard }: TransactionListPr
 
 interface TransactionItemProps {
   transaction: Transaction;
+  onEdit?: (transaction: Transaction) => void;
 }
 
-function TransactionItem({ transaction }: TransactionItemProps) {
+function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
   const theme = useColorScheme() ?? 'light';
   const isIncome = transaction.type === 'income';
   const amountColor = isIncome ? '#4ADE80' : '#F87171';
   const iconName = isIncome ? 'arrow-up-circle' : 'arrow-down-circle';
+  const categoryInfo = getCategoryInfo(transaction.category);
 
   return (
     <ThemedView
@@ -86,7 +103,16 @@ function TransactionItem({ transaction }: TransactionItemProps) {
             {transaction.title}
           </ThemedText>
           <View style={styles.itemMeta}>
-            <ThemedText style={styles.itemCategory}>{transaction.category}</ThemedText>
+            <View style={styles.categoryContainer}>
+              <Ionicons
+                name={categoryInfo.icon as any}
+                size={14}
+                color={categoryInfo.color}
+              />
+              <ThemedText style={[styles.itemCategory, { color: categoryInfo.color }]}>
+                {transaction.category}
+              </ThemedText>
+            </View>
             {transaction.description ? (
               <>
                 <ThemedText style={styles.itemSeparator}>•</ThemedText>
@@ -106,6 +132,18 @@ function TransactionItem({ transaction }: TransactionItemProps) {
             maximumFractionDigits: 2,
           })}
         </Text>
+        {onEdit && (
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => onEdit(transaction)}
+            activeOpacity={0.7}>
+            <Ionicons
+              name="create-outline"
+              size={18}
+              color={theme === 'light' ? '#666' : '#9CA3AF'}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </ThemedView>
   );
@@ -197,10 +235,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
+    gap: 4,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   itemCategory: {
     fontSize: 12,
-    opacity: 0.6,
+    fontWeight: '600',
   },
   itemSeparator: {
     fontSize: 12,
@@ -214,10 +258,16 @@ const styles = StyleSheet.create({
   },
   itemRight: {
     alignItems: 'flex-end',
+    gap: 8,
   },
   itemAmount: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  editButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
   },
 });
 

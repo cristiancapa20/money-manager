@@ -20,8 +20,16 @@ export function TransactionList({
 }: TransactionListProps) {
   const theme = useColorScheme() ?? 'light';
 
-  // Ordenar transacciones: más recientes primero
-  const sortedTransactions = [...transactions].reverse();
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    const aDate = (a as any).createdAt 
+      ? new Date((a as any).createdAt).getTime()
+      : (a.id && !isNaN(parseInt(a.id)) ? parseInt(a.id) : 0);
+    const bDate = (b as any).createdAt 
+      ? new Date((b as any).createdAt).getTime()
+      : (b.id && !isNaN(parseInt(b.id)) ? parseInt(b.id) : 0);
+    
+    return aDate - bDate;
+  });
 
   const ListHeaderComponent = () => (
     <View style={styles.headerContainer}>
@@ -122,6 +130,38 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
               </>
             ) : null}
           </View>
+          {(() => {
+            let dateTime: string = '';
+            if ((transaction as any).createdAt) {
+              // La fecha viene en UTC, convertir a zona horaria local
+              const utcDate = new Date((transaction as any).createdAt);
+              if (!isNaN(utcDate.getTime())) {
+                // Usar toLocaleString para obtener la fecha en la zona horaria local
+                const day = utcDate.getDate();
+                const month = utcDate.toLocaleDateString('es-EC', { month: 'short' });
+                const year = utcDate.getFullYear();
+                const hours = utcDate.getHours().toString().padStart(2, '0');
+                const minutes = utcDate.getMinutes().toString().padStart(2, '0');
+                dateTime = `${day} ${month} ${year} • ${hours}:${minutes}`;
+              }
+            } else if (transaction.id && !isNaN(parseInt(transaction.id))) {
+              const date = new Date(parseInt(transaction.id));
+              if (!isNaN(date.getTime())) {
+                const day = date.getDate();
+                const month = date.toLocaleDateString('es-EC', { month: 'short' });
+                const year = date.getFullYear();
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                dateTime = `${day} ${month} ${year} • ${hours}:${minutes}`;
+              }
+            }
+            
+            return dateTime ? (
+              <ThemedText style={styles.itemDateTime}>
+                {dateTime}
+              </ThemedText>
+            ) : null;
+          })()}
         </View>
       </View>
       <View style={styles.itemRight}>
@@ -255,6 +295,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.6,
     flex: 1,
+  },
+  itemDateTime: {
+    fontSize: 11,
+    opacity: 0.5,
   },
   itemRight: {
     alignItems: 'flex-end',

@@ -4,10 +4,8 @@ import * as SQLite from 'expo-sqlite';
 
 const dbName = 'costos.db';
 
-// Variable global para almacenar la instancia de la base de datos
 let db: SQLite.SQLiteDatabase | null = null;
 
-// Abrir o crear la base de datos
 export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (db) {
     return db;
@@ -16,12 +14,10 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
   return db;
 }
 
-// Inicializar las tablas
 export async function initDatabase(): Promise<void> {
   try {
     const database = await openDatabase();
     
-    // Crear tabla de tarjetas
     await database.execAsync(`
       CREATE TABLE IF NOT EXISTS cards (
         id TEXT PRIMARY KEY NOT NULL,
@@ -32,21 +28,34 @@ export async function initDatabase(): Promise<void> {
     `);
     console.log('Tabla cards creada correctamente');
 
-    // Crear tabla de transacciones
-    await database.execAsync(`
-      CREATE TABLE IF NOT EXISTS transactions (
-        id TEXT PRIMARY KEY NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        amount REAL NOT NULL,
-        type TEXT NOT NULL,
-        category TEXT NOT NULL,
-        cardId TEXT NOT NULL,
-        createdAt TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (cardId) REFERENCES cards(id) ON DELETE CASCADE
-      );
-    `);
-    console.log('Tabla transactions creada correctamente');
+        // Crear tabla de transacciones
+        await database.execAsync(`
+          CREATE TABLE IF NOT EXISTS transactions (
+            id TEXT PRIMARY KEY NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            amount REAL NOT NULL,
+            type TEXT NOT NULL,
+            category TEXT NOT NULL,
+            cardId TEXT NOT NULL,
+            createdAt TEXT,
+            FOREIGN KEY (cardId) REFERENCES cards(id) ON DELETE CASCADE
+          );
+        `);
+        
+        try {
+          await database.execAsync(`
+            ALTER TABLE transactions ADD COLUMN createdAt TEXT;
+          `);
+          console.log('Columna createdAt verificada/agregada');
+        } catch (error: any) {
+          const errorMsg = error?.message || String(error);
+          if (!errorMsg.includes('duplicate column') && !errorMsg.includes('already exists')) {
+            console.warn('Advertencia al verificar columna createdAt:', errorMsg);
+          }
+        }
+        
+        console.log('Tabla transactions creada correctamente');
     console.log('Base de datos inicializada correctamente');
   } catch (error) {
     console.error('Error al inicializar base de datos:', error);
@@ -136,7 +145,7 @@ export async function getAllTransactions(): Promise<Transaction[]> {
       category: string;
       cardId: string;
       createdAt?: string;
-    }>('SELECT * FROM transactions ORDER BY createdAt DESC;');
+    }>('SELECT * FROM transactions ORDER BY createdAt ASC;');
     
     return result.map((row) => ({
       id: row.id,
@@ -165,7 +174,7 @@ export async function getTransactionsByCardId(cardId: string): Promise<Transacti
       type: string;
       category: string;
       cardId: string;
-    }>('SELECT * FROM transactions WHERE cardId = ? ORDER BY createdAt DESC;', [cardId]);
+    }>('SELECT * FROM transactions WHERE cardId = ? ORDER BY createdAt ASC;', [cardId]);
     
     return result.map((row) => ({
       id: row.id,
@@ -219,21 +228,42 @@ export async function insertTransaction(transaction: Transaction): Promise<void>
     const database = await openDatabase();
     const id = transaction.id || Date.now().toString();
     
+    // Guardar fecha en UTC como ISO string
+    const utcDate = new Date().toISOString();
+    
+    // Validar campos requeridos
+    if (!transaction.title || !transaction.cardId || !transaction.category) {
+      throw new Error('Campos requeridos faltantes en la transacción');
+    }
+    
+    // Asegurar que todos los valores estén definidos
+    const values = [
+      id,
+      String(transaction.title || ''),
+      String(transaction.description || ''),
+      Number(transaction.amount || 0),
+      String(transaction.type || 'expense'),
+      String(transaction.category),
+      String(transaction.cardId),
+      String(utcDate),
+    ];
+    
     await database.runAsync(
-      'INSERT INTO transactions (id, title, description, amount, type, category, cardId) VALUES (?, ?, ?, ?, ?, ?, ?);',
-      [
-        id,
-        transaction.title,
-        transaction.description,
-        transaction.amount,
-        transaction.type,
-        transaction.category,
-        transaction.cardId,
-      ]
+      'INSERT INTO transactions (id, title, description, amount, type, category, cardId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+      values
     );
     console.log('Transacción insertada correctamente');
   } catch (error) {
     console.error('Error al insertar transacción:', error);
+    console.error('Datos de la transacción:', {
+      id: transaction.id,
+      title: transaction.title,
+      description: transaction.description,
+      amount: transaction.amount,
+      type: transaction.type,
+      category: transaction.category,
+      cardId: transaction.cardId,
+    });
     throw error;
   }
 }

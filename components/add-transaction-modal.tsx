@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { categoryMap } from '@/utils/categories';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Modal,
     ScrollView,
@@ -24,6 +24,7 @@ export interface Transaction {
   type: TransactionType;
   category: string;
   cardId: string;
+  createdAt?: string;
 }
 
 interface AddTransactionModalProps {
@@ -50,7 +51,6 @@ export function AddTransactionModal({
   const [type, setType] = useState<TransactionType>('expense');
   const [category, setCategory] = useState('');
 
-  // Cargar datos de la transacción cuando se está editando
   useEffect(() => {
     if (editingTransaction) {
       setTitle(editingTransaction.title);

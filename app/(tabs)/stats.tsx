@@ -1,12 +1,12 @@
+import { BalanceChart } from '@/components/balance-chart';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TransactionCalendar } from '@/components/transaction-calendar';
 import { useApp } from '@/contexts/app-context';
-import { StyleSheet, ScrollView, View } from 'react-native';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function StatsScreen() {
-  const { transactions, isLoading } = useApp();
+  const { transactions, cards, isLoading } = useApp();
 
   if (isLoading) {
     return (
@@ -27,6 +27,7 @@ export default function StatsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         <TransactionCalendar transactions={transactions} />
+        <BalanceChart transactions={transactions} cards={cards} />
       </ScrollView>
     </ThemedView>
   );

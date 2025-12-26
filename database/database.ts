@@ -135,6 +135,7 @@ export async function getAllTransactions(): Promise<Transaction[]> {
       type: string;
       category: string;
       cardId: string;
+      createdAt?: string;
     }>('SELECT * FROM transactions ORDER BY createdAt DESC;');
     
     return result.map((row) => ({
@@ -145,6 +146,7 @@ export async function getAllTransactions(): Promise<Transaction[]> {
       type: row.type as 'income' | 'expense',
       category: row.category,
       cardId: row.cardId,
+      createdAt: row.createdAt,
     }));
   } catch (error) {
     console.error('Error al obtener transacciones:', error);

@@ -1,14 +1,33 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { StyleSheet } from 'react-native';
+import { TransactionCalendar } from '@/components/transaction-calendar';
+import { useApp } from '@/contexts/app-context';
+import { StyleSheet, ScrollView, View } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 
 export default function StatsScreen() {
+  const { transactions, isLoading } = useApp();
+
+  if (isLoading) {
+    return (
+      <ThemedView style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" />
+        <ThemedText style={styles.loadingText}>Cargando datos...</ThemedText>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title">Estadísticas</ThemedText>
-      <ThemedText style={styles.subtitle}>
-        Aquí verás tus estadísticas y reportes
-      </ThemedText>
+      <View style={styles.header}>
+        <ThemedText type="title">Estadísticas</ThemedText>
+      </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
+        <TransactionCalendar transactions={transactions} />
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -16,13 +35,25 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
   },
-  subtitle: {
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
     marginTop: 16,
-    opacity: 0.7,
+    fontSize: 16,
+  },
+  header: {
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 10,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100, // Espacio para el tab bar flotante
   },
 });
 

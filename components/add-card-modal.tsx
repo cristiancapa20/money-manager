@@ -1,3 +1,8 @@
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import type { Card } from '@/types/card';
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   Modal,
@@ -7,11 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import type { Card } from '@/types/card';
 
 interface AddCardModalProps {
   visible: boolean;

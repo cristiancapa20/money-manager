@@ -2,16 +2,17 @@ import type { Card } from '@/types/card';
 import { useEffect, useRef } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import Animated, {
-    interpolate,
-    useAnimatedScrollHandler,
-    useAnimatedStyle,
-    useSharedValue,
+  interpolate,
+  SharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
 } from 'react-native-reanimated';
 import type { Transaction } from './add-transaction-modal';
 import { BalanceCard } from './balance-card';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.75; // 75% del ancho de pantalla - más pequeño
+const CARD_WIDTH = SCREEN_WIDTH; // 100% del ancho de pantalla
 const CARD_SPACING = 12;
 const CARD_OFFSET = 15; // Menos superposición
 
@@ -123,7 +124,7 @@ interface CardItemProps {
   income: number;
   expenses: number;
   index: number;
-  scrollX: Animated.SharedValue<number>;
+  scrollX: SharedValue<number>;
 }
 
 function CardItem({ card, balance, income, expenses, index, scrollX }: CardItemProps) {
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   scrollContent: {
-    paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2,
+    paddingHorizontal: 0,
     paddingVertical: 10,
   },
   cardWrapper: {

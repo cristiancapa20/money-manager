@@ -4,7 +4,6 @@ import { Platform } from 'react-native';
 
 import { CenterTabButton } from '@/components/center-tab-button';
 import { HapticTab } from '@/components/haptic-tab';
-import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
@@ -14,8 +13,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: '#FFFFFF',
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
@@ -25,10 +24,10 @@ export default function TabLayout() {
           right: 20,
           height: 70,
           borderRadius: 25,
-          backgroundColor: isDark ? '#1F1F1F' : '#FFFFFF',
+          backgroundColor: '#4d6080',
           borderTopWidth: 0,
           paddingBottom: 10,
-          paddingTop: 10,
+          paddingTop: 5,
           paddingHorizontal: 10,
           shadowColor: '#000',
           shadowOffset: {
@@ -50,11 +49,9 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
-          marginTop: 4,
+          color: '#FFFFFF',
         },
-        tabBarIconStyle: {
-          marginTop: 4,
-        },
+        
         tabBarShowLabel: true,
       }}>
       <Tabs.Screen
@@ -65,7 +62,7 @@ export default function TabLayout() {
             <Ionicons 
               name={focused ? "wallet" : "wallet-outline"} 
               size={focused ? 26 : 24} 
-              color={focused ? color : (isDark ? '#666' : '#999')} 
+              color="#FFFFFF"
             />
           ),
         }}
@@ -87,7 +84,7 @@ export default function TabLayout() {
             <Ionicons 
               name={focused ? "analytics" : "analytics-outline"} 
               size={focused ? 26 : 24} 
-              color={focused ? color : (isDark ? '#666' : '#999')} 
+              color="#FFFFFF"
             />
           ),
         }}

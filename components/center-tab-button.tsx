@@ -1,9 +1,9 @@
-import { StyleSheet, View, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useApp } from '@/contexts/app-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { PlatformPressable } from '@react-navigation/elements';
+import { Alert, StyleSheet, View } from 'react-native';
 
 export function CenterTabButton(props: BottomTabBarButtonProps) {
   const theme = useColorScheme() ?? 'light';
@@ -46,12 +46,12 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#1E3A8A',
+    backgroundColor: '#f3701e',
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconContainerDark: {
-    backgroundColor: '#1E40AF',
+    backgroundColor: '#f3701e',
   },
 });
 

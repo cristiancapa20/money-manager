@@ -4,9 +4,24 @@ import { ThemedView } from '@/components/themed-view';
 import { TransactionCalendar } from '@/components/transaction-calendar';
 import { useApp } from '@/contexts/app-context';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo } from 'react';
 
 export default function StatsScreen() {
-  const { transactions, cards, isLoading } = useApp();
+  const { transactions, cards, selectedCardId, isLoading } = useApp();
+
+  const selectedCard = useMemo(() => {
+    if (!selectedCardId || cards.length === 0) return null;
+    return cards.find((c) => c.id === selectedCardId) || null;
+  }, [selectedCardId, cards]);
+
+  const cardTransactions = useMemo(() => {
+    if (!selectedCard) return [];
+    return transactions.filter((t) => t.cardId === selectedCard.id);
+  }, [transactions, selectedCard]);
+
+  const selectedCards = useMemo(() => {
+    return selectedCard ? [selectedCard] : [];
+  }, [selectedCard]);
 
   if (isLoading) {
     return (
@@ -26,8 +41,18 @@ export default function StatsScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        <TransactionCalendar transactions={transactions} />
-        <BalanceChart transactions={transactions} cards={cards} />
+        {selectedCard ? (
+          <>
+            <TransactionCalendar transactions={cardTransactions} />
+            <BalanceChart transactions={cardTransactions} cards={selectedCards} />
+          </>
+        ) : (
+          <View style={styles.emptyState}>
+            <ThemedText style={styles.emptyText}>
+              Selecciona una tarjeta para ver las estadísticas
+            </ThemedText>
+          </View>
+        )}
       </ScrollView>
     </ThemedView>
   );
@@ -55,6 +80,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100, // Espacio para el tab bar flotante
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    opacity: 0.6,
+    textAlign: 'center',
   },
 });
 

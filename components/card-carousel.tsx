@@ -2,7 +2,7 @@ import type { Card } from '@/types/card';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { Transaction } from './add-transaction-modal';
 
 interface CardCarouselProps {
@@ -10,6 +10,7 @@ interface CardCarouselProps {
   selectedCardIndex: number;
   onCardChange: (index: number) => void;
   transactions: Transaction[];
+  onDeleteCard?: (cardId: string) => void;
 }
 
 export function CardCarousel({
@@ -17,6 +18,7 @@ export function CardCarousel({
   selectedCardIndex,
   onCardChange,
   transactions,
+  onDeleteCard,
 }: CardCarouselProps) {
   if (cards.length === 0) {
     return null;
@@ -51,6 +53,7 @@ export function CardCarousel({
         balance={balance}
         income={income}
         expenses={expenses}
+        onDeleteCard={onDeleteCard}
       />
       {cards.length > 1 && (
         <View style={styles.navigationContainer}>
@@ -98,9 +101,10 @@ interface CardItemProps {
   balance: number;
   income: number;
   expenses: number;
+  onDeleteCard?: (cardId: string) => void;
 }
 
-function CardItem({ card, balance }: CardItemProps) {
+function CardItem({ card, balance, onDeleteCard }: CardItemProps) {
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
   const formatCurrency = (amount: number) => {
@@ -115,6 +119,29 @@ function CardItem({ card, balance }: CardItemProps) {
 
   const toggleBalanceVisibility = () => {
     setIsBalanceVisible(!isBalanceVisible);
+  };
+
+  const handleDeletePress = () => {
+    Alert.alert(
+      'Eliminar tarjeta',
+      `¿Estás seguro de que deseas eliminar la tarjeta "${card.name}"? Esta acción eliminará la tarjeta y todas sus transacciones. Esta acción no se puede deshacer.`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: () => {
+            if (onDeleteCard) {
+              onDeleteCard(card.id);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -132,7 +159,7 @@ function CardItem({ card, balance }: CardItemProps) {
 
         {/* Content */}
         <View style={styles.cardContent}>
-          {/* Top section with bank icon */}
+          {/* Top section with bank icon and delete button */}
           <View style={styles.cardTop}>
             <View style={styles.bankSection}>
               <View style={styles.bankIconContainer}>
@@ -143,6 +170,14 @@ function CardItem({ card, balance }: CardItemProps) {
                 <Text style={styles.bankName}>{card.name}</Text>
               </View>
             </View>
+            {onDeleteCard && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={handleDeletePress}
+                activeOpacity={0.7}>
+                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Balance section */}
@@ -233,6 +268,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   cardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 24,
   },
   bankSection: {
@@ -255,6 +293,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   balanceSection: {
     marginBottom: 6,

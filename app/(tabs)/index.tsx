@@ -18,6 +18,7 @@ export default function HomeScreen() {
     selectedCardId,
     setSelectedCardId,
     addCard,
+    deleteCard,
     setEditingTransaction,
     editingTransaction,
     transactionModalVisible,
@@ -123,6 +124,7 @@ export default function HomeScreen() {
               selectedCardIndex={selectedCardIndex}
               onCardChange={handleCardChangeByIndex}
               transactions={transactions}
+              onDeleteCard={deleteCard}
             />
           ) : null
         }

@@ -1,20 +1,7 @@
 import type { Card } from '@/types/card';
-import { useEffect, useRef } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
-import Animated, {
-  interpolate,
-  SharedValue,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { Transaction } from './add-transaction-modal';
-import { BalanceCard } from './balance-card';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH; // 100% del ancho de pantalla
-const CARD_SPACING = 12;
-const CARD_OFFSET = 15; // Menos superposición
 
 interface CardCarouselProps {
   cards: Card[];
@@ -29,78 +16,58 @@ export function CardCarousel({
   onCardChange,
   transactions,
 }: CardCarouselProps) {
-  const scrollX = useSharedValue(selectedCardIndex * CARD_WIDTH);
-  const scrollViewRef = useRef<Animated.ScrollView>(null);
-
   if (cards.length === 0) {
     return null;
   }
 
-  // Sincronizar scroll cuando cambia el índice seleccionado
-  useEffect(() => {
-    if (scrollViewRef.current) {
-      const cardWidthWithSpacing = CARD_WIDTH + CARD_SPACING;
-      scrollViewRef.current.scrollTo({
-        x: selectedCardIndex * cardWidthWithSpacing,
-        animated: true,
-      });
+  const selectedCard = cards[selectedCardIndex];
+  const cardTransactions = transactions.filter((t) => t.cardId === selectedCard.id);
+  const income = cardTransactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const expenses = cardTransactions
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const balance = selectedCard.initialBalance + income - expenses;
+
+  const handlePrevious = () => {
+    if (selectedCardIndex > 0) {
+      onCardChange(selectedCardIndex - 1);
     }
-    const cardWidthWithSpacing = CARD_WIDTH + CARD_SPACING;
-    scrollX.value = selectedCardIndex * cardWidthWithSpacing;
-  }, [selectedCardIndex]);
+  };
 
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollX.value = event.contentOffset.x;
-    },
-  });
-
-  const handleScrollEnd = (event: any) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const cardWidthWithSpacing = CARD_WIDTH + CARD_SPACING;
-    const index = Math.round(offsetX / cardWidthWithSpacing);
-    if (index !== selectedCardIndex && index >= 0 && index < cards.length) {
-      onCardChange(index);
+  const handleNext = () => {
+    if (selectedCardIndex < cards.length - 1) {
+      onCardChange(selectedCardIndex + 1);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Animated.ScrollView
-        ref={scrollViewRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={CARD_WIDTH + CARD_SPACING}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        onScroll={scrollHandler}
-        onMomentumScrollEnd={handleScrollEnd}
-        scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
-        bounces={false}>
-        {cards.map((card, index) => {
-          const cardTransactions = transactions.filter((t) => t.cardId === card.id);
-          const income = cardTransactions
-            .filter((t) => t.type === 'income')
-            .reduce((sum, t) => sum + t.amount, 0);
-          const expenses = cardTransactions
-            .filter((t) => t.type === 'expense')
-            .reduce((sum, t) => sum + t.amount, 0);
-          const balance = card.initialBalance + income - expenses;
-
-          return (
-            <CardItem
-              key={card.id}
-              card={card}
-              balance={balance}
-              income={income}
-              expenses={expenses}
-              index={index}
-              scrollX={scrollX}
-            />
-          );
-        })}
-      </Animated.ScrollView>
+      <View style={styles.cardWrapper}>
+        {selectedCardIndex > 0 && (
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={handlePrevious}
+            activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+        <CardItem
+          card={selectedCard}
+          balance={balance}
+          income={income}
+          expenses={expenses}
+        />
+        {selectedCardIndex < cards.length - 1 && (
+          <TouchableOpacity
+            style={[styles.navButton, styles.navButtonRight]}
+            onPress={handleNext}
+            activeOpacity={0.7}>
+            <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+      </View>
       {cards.length > 1 && (
         <View style={styles.indicators}>
           {cards.map((_, index) => (
@@ -123,56 +90,42 @@ interface CardItemProps {
   balance: number;
   income: number;
   expenses: number;
-  index: number;
-  scrollX: SharedValue<number>;
 }
 
-function CardItem({ card, balance, income, expenses, index, scrollX }: CardItemProps) {
-  const cardWidthWithSpacing = CARD_WIDTH + CARD_SPACING;
-  const inputRange = [
-    (index - 1) * cardWidthWithSpacing,
-    index * cardWidthWithSpacing,
-    (index + 1) * cardWidthWithSpacing,
-  ];
+function CardItem({ card, balance }: CardItemProps) {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+    }).format(amount);
+  };
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.85, 1, 0.85],
-      'clamp'
-    );
-
-    const opacity = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.6, 1, 0.6],
-      'clamp'
-    );
-
-    const translateX = interpolate(
-      scrollX.value,
-      inputRange,
-      [CARD_OFFSET, 0, -CARD_OFFSET],
-      'clamp'
-    );
-
-    return {
-      transform: [{ scale }, { translateX }],
-      opacity,
-    };
-  });
+  const cardColor = card.color || '#1E3A8A';
 
   return (
-    <Animated.View style={[styles.cardWrapper, animatedStyle]}>
-      <BalanceCard
-        balance={balance}
-        income={income}
-        expenses={expenses}
-        cardName={card.name}
-        cardColor={card.color}
-      />
-    </Animated.View>
+    <View style={[styles.card, { backgroundColor: cardColor }]}>
+      {/* Pattern overlay */}
+      <View style={styles.patternOverlay}>
+        <View style={styles.patternCircle1} />
+        <View style={styles.patternCircle2} />
+      </View>
+      
+      {/* Content */}
+      <View style={styles.cardContent}>
+        <View style={styles.cardTop}>
+          <Text style={styles.cardBank}>TARJETA</Text>
+          <Text style={styles.cardName}>{card.name}</Text>
+        </View>
+        
+        <View style={styles.cardBottom}>
+          <Text style={styles.balanceLabel}>BALANCE</Text>
+          <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
+        </View>
+      </View>
+      
+      {/* Card chip decoration */}
+      <View style={styles.cardChip} />
+    </View>
   );
 }
 
@@ -180,13 +133,114 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
   },
-  scrollContent: {
-    paddingHorizontal: 0,
-    paddingVertical: 10,
-  },
   cardWrapper: {
-    width: CARD_WIDTH,
-    marginRight: CARD_SPACING,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navButton: {
+    position: 'absolute',
+    left: 10,
+    top: 88,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  navButtonRight: {
+    left: 'auto',
+    right: 10,
+  },
+  card: {
+    width: '100%',
+    height: 176,
+    borderRadius: 24,
+    padding: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  patternOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.2,
+  },
+  patternCircle1: {
+    position: 'absolute',
+    top: -64,
+    right: -64,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  patternCircle2: {
+    position: 'absolute',
+    bottom: -48,
+    left: -48,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+    zIndex: 1,
+  },
+  cardTop: {
+    marginTop: 4,
+  },
+  cardBank: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    opacity: 0.8,
+    letterSpacing: 1.2,
+  },
+  cardName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginTop: 4,
+  },
+  cardBottom: {
+    marginBottom: 4,
+  },
+  balanceLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    opacity: 0.8,
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
+  balanceAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  cardChip: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 40,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    zIndex: 1,
   },
   indicators: {
     flexDirection: 'row',

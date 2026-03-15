@@ -1,7 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ThemeSwitch } from '@/components/theme-switch';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -153,7 +152,6 @@ export default function ProfileScreen() {
 
         {/* Acciones derecha */}
         <View style={styles.topActions}>
-          <ThemeSwitch />
           <TouchableOpacity
             style={[styles.iconPill, { backgroundColor: theme.expenseBg, borderColor: theme.expense }]}
             onPress={handleLogout}

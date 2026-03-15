@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Card } from '@/types/card';
 import type { Transaction } from '@/types/transaction';
+import { ThemeSwitch } from '@/components/theme-switch';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -108,22 +109,21 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.avatarBtn, { borderColor: theme.tintBorder }]}
-          onPress={() => router.push('/profile')}
-          activeOpacity={0.8}>
-          {user?.avatarUri ? (
-            <Image source={{ uri: user.avatarUri }} style={styles.avatarImg} />
-          ) : (
-            <View style={[styles.avatarFallback, { backgroundColor: theme.tintLight }]}>
-              <Text style={[styles.avatarInitials, { color: theme.tint }]}>{initials}</Text>
-            </View>
-          )}
-          {/* Pequeño ícono de perfil encima */}
-          <View style={[styles.avatarBadge, { backgroundColor: theme.tint }]}>
-            <Ionicons name="person" size={8} color="#fff" />
-          </View>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <ThemeSwitch />
+          <TouchableOpacity
+            style={[styles.avatarBtn, { borderColor: theme.tintBorder }]}
+            onPress={() => router.push('/profile')}
+            activeOpacity={0.8}>
+            {user?.avatarUri ? (
+              <Image source={{ uri: user.avatarUri }} style={styles.avatarImg} />
+            ) : (
+              <View style={[styles.avatarFallback, { backgroundColor: theme.tintLight }]}>
+                <Text style={[styles.avatarInitials, { color: theme.tint }]}>{initials}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <CardSelector
@@ -185,6 +185,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   headerLeft: { flex: 1, marginRight: 12 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   greeting: { fontSize: 13, fontWeight: '500' },
   userName: { fontSize: 20, fontWeight: '700', marginTop: 1 },
 

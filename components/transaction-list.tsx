@@ -15,12 +15,12 @@ interface TransactionListProps {
 
 export function TransactionList({ transactions, balanceCard, onEditTransaction }: TransactionListProps) {
   const scheme = useColorScheme() ?? 'light';
-  const theme = Colors[scheme];
+  const theme  = Colors[scheme];
 
   const sortedTransactions = [...transactions].sort((a, b) => {
     const aTime = a.date ? new Date(a.date).getTime() : new Date(a.createdAt).getTime();
     const bTime = b.date ? new Date(b.date).getTime() : new Date(b.createdAt).getTime();
-    return bTime - aTime; // más recientes primero
+    return bTime - aTime;
   });
 
   const ListHeaderComponent = () => (
@@ -28,9 +28,7 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
       {balanceCard}
       {balanceCard && transactions.length > 0 && (
         <View style={styles.sectionHeader}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Transacciones
-          </ThemedText>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Transacciones</ThemedText>
           <View style={[styles.countBadge, { backgroundColor: theme.tintLight }]}>
             <Text style={[styles.countText, { color: theme.tint }]}>{transactions.length}</Text>
           </View>
@@ -76,109 +74,69 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
   );
 }
 
-// ─── Item ────────────────────────────────────────────────────────────────────
-
 interface TransactionItemProps {
   transaction: Transaction;
   onEdit?: (transaction: Transaction) => void;
 }
 
 function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
-  const scheme = useColorScheme() ?? 'light';
-  const theme = Colors[scheme];
+  const scheme   = useColorScheme() ?? 'light';
+  const theme    = Colors[scheme];
   const isIncome = transaction.type === 'INCOME';
-  // Usar datos de categoría que vienen del JOIN de Turso
+
+  // El campo icon en Turso es un emoji directo (🍔 🚗 🏠), no un nombre de Ionicons
   const catColor = transaction.categoryColor ?? '#6b7280';
-  const catIcon  = transaction.categoryIcon  ?? 'pricetag-outline';
+  const catEmoji = transaction.categoryIcon  ?? '📦';
   const catName  = transaction.category      ?? 'Sin categoría';
 
-  // ── Parsear fecha ──
-  let dateParts: { day: string; dayName: string; month: string } | null = null;
   const rawDate = transaction.date
     ? new Date(transaction.date)
     : transaction.createdAt
     ? new Date(transaction.createdAt)
     : null;
 
-  if (rawDate && !isNaN(rawDate.getTime())) {
-    dateParts = {
-      day:     rawDate.getDate().toString(),
-      dayName: rawDate.toLocaleDateString('es-EC', { weekday: 'short' }).replace('.', '').toUpperCase(),
-      month:   rawDate.toLocaleDateString('es-EC', { month: 'short' }).replace('.', '').toUpperCase(),
-    };
-  }
+  const dateParts = rawDate && !isNaN(rawDate.getTime()) ? {
+    day:     rawDate.getDate().toString(),
+    dayName: rawDate.toLocaleDateString('es-EC', { weekday: 'short' }).replace('.', '').toUpperCase(),
+    month:   rawDate.toLocaleDateString('es-EC', { month: 'short' }).replace('.', '').toUpperCase(),
+  } : null;
 
   return (
-    <View
-      style={[
-        styles.item,
-        {
-          backgroundColor: theme.card,
-          borderColor: theme.border,
-        },
-      ]}
-    >
-      {/* Left date panel — estilo Finance Tracker móvil */}
+    <View style={[styles.item, { backgroundColor: theme.card, borderColor: theme.border }]}>
+
       {dateParts && (
         <View style={[styles.datePanelOuter, { backgroundColor: theme.divider, borderRightColor: theme.border }]}>
-          <Text style={[styles.dateDay, { color: theme.text }]}>{dateParts.day}</Text>
+          <Text style={[styles.dateDay,     { color: theme.text }]}>{dateParts.day}</Text>
           <Text style={[styles.dateDayName, { color: theme.textSecondary }]}>{dateParts.dayName}</Text>
-          <Text style={[styles.dateMonth, { color: theme.textMuted }]}>{dateParts.month}</Text>
+          <Text style={[styles.dateMonth,   { color: theme.textMuted }]}>{dateParts.month}</Text>
         </View>
       )}
 
-      {/* Right content */}
       <View style={styles.itemContent}>
-        {/* Top row: description + amount */}
         <View style={styles.itemTop}>
-          <View style={styles.itemLeft}>
-            <View style={[styles.categoryDot, { backgroundColor: catColor + '22' }]}>
-              <Ionicons name={catIcon as any} size={16} color={catColor} />
-            </View>
-            <View style={styles.itemInfo}>
-              <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={1}>
-                {catName}
-              </Text>
-              <View style={styles.itemMeta}>
-                <Text style={[styles.itemCategory, { color: catColor }]}>
-                  {catName}
-                </Text>
-                {transaction.description ? (
-                  <>
-                    <Text style={[styles.sep, { color: theme.textMuted }]}>·</Text>
-                    <Text style={[styles.itemDesc, { color: theme.textSecondary }]} numberOfLines={1}>
-                      {transaction.description}
-                    </Text>
-                  </>
-                ) : null}
-              </View>
-            </View>
+          <View style={[styles.categoryDot, { backgroundColor: catColor + '22' }]}>
+            <Text style={styles.categoryEmoji}>{catEmoji}</Text>
           </View>
 
-          <Text
-            style={[
-              styles.itemAmount,
-              { color: isIncome ? theme.income : theme.expense },
-            ]}
-          >
-            {isIncome ? '+' : '-'}$
-            {transaction.amount.toLocaleString('es-MX', {
+          <View style={styles.itemInfo}>
+            <Text style={[styles.itemDesc, { color: theme.text }]} numberOfLines={1}>
+              {transaction.description}
+            </Text>
+            <Text style={[styles.itemCategory, { color: catColor }]} numberOfLines={1}>
+              {catName}
+            </Text>
+          </View>
+
+          <Text style={[styles.itemAmount, { color: isIncome ? theme.income : theme.expense }]}>
+            {isIncome ? '+' : '-'}${transaction.amount.toLocaleString('es-MX', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
           </Text>
         </View>
 
-        {/* Bottom row: type badge + edit */}
         <View style={[styles.itemBottom, { borderTopColor: theme.divider }]}>
-          <View
-            style={[
-              styles.typeBadge,
-              {
-                backgroundColor: isIncome ? theme.incomeBg : theme.expenseBg,
-              },
-            ]}
-          >
+          <View style={[styles.typeBadge, { backgroundColor: isIncome ? theme.incomeBg : theme.expenseBg }]}>
             <Ionicons
               name={isIncome ? 'trending-up' : 'trending-down'}
               size={11}
@@ -193,8 +151,7 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
             <TouchableOpacity
               style={[styles.editBtn, { backgroundColor: theme.tintLight }]}
               onPress={() => onEdit(transaction)}
-              activeOpacity={0.7}
-            >
+              activeOpacity={0.7}>
               <Ionicons name="pencil-outline" size={14} color={theme.tint} />
             </TouchableOpacity>
           )}
@@ -205,12 +162,10 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container:       { flex: 1 },
   headerContainer: { paddingHorizontal: 20 },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 120,
-  },
+  listContent:     { paddingHorizontal: 16, paddingBottom: 120 },
+
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -218,19 +173,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  countBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  countText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
+  sectionTitle: { fontSize: 17, fontWeight: '700' },
+  countBadge:   { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  countText:    { fontSize: 12, fontWeight: '700' },
+
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -245,17 +191,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  emptyText: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  // ── Item ──────────────────────────────────────────────────────────────────
+  emptyText:    { fontSize: 17, fontWeight: '600', marginBottom: 6 },
+  emptySubtext: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+
   item: {
     flexDirection: 'row',
     marginBottom: 10,
@@ -271,77 +209,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderRightWidth: 1,
   },
-  dateDay: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 22,
-  },
-  dateDayName: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  dateMonth: {
-    fontSize: 10,
-    marginTop: 1,
-  },
-  itemContent: {
-    flex: 1,
-  },
+  dateDay:     { fontSize: 20, fontWeight: '700', lineHeight: 22 },
+  dateDayName: { fontSize: 10, fontWeight: '600', marginTop: 1 },
+  dateMonth:   { fontSize: 10, marginTop: 1 },
+
+  itemContent: { flex: 1 },
   itemTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 8,
-  },
-  itemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 8,
     gap: 10,
   },
+
   categoryDot: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
   },
-  itemInfo: {
-    flex: 1,
-  },
-  itemTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  itemMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  itemCategory: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  sep: {
-    fontSize: 12,
-    marginHorizontal: 2,
-  },
-  itemDesc: {
-    fontSize: 12,
-    flex: 1,
-  },
-  itemAmount: {
-    fontSize: 15,
-    fontWeight: '700',
-    flexShrink: 0,
-  },
+  categoryEmoji: { fontSize: 18, lineHeight: 22 },
+
+  itemInfo:     { flex: 1, gap: 2 },
+  itemDesc:     { fontSize: 13, fontWeight: '600' },
+  itemCategory: { fontSize: 11, fontWeight: '500' },
+  itemAmount:   { fontSize: 14, fontWeight: '700', flexShrink: 0 },
+
   itemBottom: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -358,10 +254,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
-  typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
+  typeBadgeText: { fontSize: 11, fontWeight: '600' },
   editBtn: {
     width: 28,
     height: 28,

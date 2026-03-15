@@ -1,4 +1,5 @@
 import { ThemedText } from '@/components/themed-text';
+import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
@@ -10,106 +11,65 @@ interface TransactionCalendarProps {
 }
 
 export function TransactionCalendar({ transactions }: TransactionCalendarProps) {
-  const theme = useColorScheme() ?? 'light';
-  const isDark = theme === 'dark';
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Obtener año y mes actual
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Obtener el primer día del mes y cuántos días tiene
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
   const daysInMonth = lastDayOfMonth.getDate();
-  const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Domingo, 6 = Sábado
+  const startingDayOfWeek = firstDayOfMonth.getDay();
 
-  // Nombres de los días de la semana
   const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   const monthNames = [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
   ];
 
-  // Crear un mapa de días con transacciones
   const transactionsByDate = useMemo(() => {
     const map = new Map<string, { count: number; hasIncome: boolean; hasExpense: boolean }>();
 
     transactions.forEach((transaction) => {
-      // Obtener la fecha de creación de la transacción
       let date: Date;
-      
-      // Intentar usar createdAt si está disponible
+
       if ((transaction as any).createdAt) {
         date = new Date((transaction as any).createdAt);
         if (isNaN(date.getTime())) {
-          // Si createdAt no es válido, usar el ID como timestamp
-          if (transaction.id && !isNaN(parseInt(transaction.id))) {
-            date = new Date(parseInt(transaction.id));
-            if (isNaN(date.getTime())) {
-              date = new Date();
-            }
-          } else {
-            date = new Date();
-          }
+          date = transaction.id && !isNaN(parseInt(transaction.id))
+            ? new Date(parseInt(transaction.id))
+            : new Date();
         }
       } else if (transaction.id && !isNaN(parseInt(transaction.id))) {
-        // Usar el ID como timestamp si createdAt no está disponible
         date = new Date(parseInt(transaction.id));
-        if (isNaN(date.getTime())) {
-          date = new Date();
-        }
+        if (isNaN(date.getTime())) date = new Date();
       } else {
         date = new Date();
       }
-      
+
       const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      
+
       if (!map.has(dateKey)) {
         map.set(dateKey, { count: 0, hasIncome: false, hasExpense: false });
       }
-      
+
       const entry = map.get(dateKey)!;
       entry.count += 1;
-      if (transaction.type === 'income') {
-        entry.hasIncome = true;
-      } else {
-        entry.hasExpense = true;
-      }
+      if (transaction.type === 'income') entry.hasIncome = true;
+      else entry.hasExpense = true;
     });
 
     return map;
   }, [transactions]);
 
-  // Navegar al mes anterior
-  const goToPreviousMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+  const goToPreviousMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const goToNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-  // Navegar al mes siguiente
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
+  const calendarDays: (null | { day: number; dateKey: string; count?: number; hasIncome?: boolean; hasExpense?: boolean })[] = [];
 
-  // Generar los días del calendario
-  const calendarDays = [];
-  
-  // Agregar días vacíos al inicio para alinear el primer día del mes
-  for (let i = 0; i < startingDayOfWeek; i++) {
-    calendarDays.push(null);
-  }
-  
-  // Agregar los días del mes
+  for (let i = 0; i < startingDayOfWeek; i++) calendarDays.push(null);
   for (let day = 1; day <= daysInMonth; day++) {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dayData = transactionsByDate.get(dateKey);
@@ -117,27 +77,19 @@ export function TransactionCalendar({ transactions }: TransactionCalendarProps) 
   }
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      {/* Header del calendario */}
+    <View style={[styles.container, { backgroundColor: theme.card, shadowColor: '#000' }]}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
-          <Ionicons
-            name="chevron-back"
-            size={24}
-            color={isDark ? '#fff' : '#000'}
-          />
+        <TouchableOpacity onPress={goToPreviousMonth} style={[styles.navButton, { backgroundColor: theme.divider }]}>
+          <Ionicons name="chevron-back" size={18} color={theme.tint} />
         </TouchableOpacity>
-        
+
         <ThemedText type="subtitle" style={styles.monthTitle}>
           {monthNames[month]} {year}
         </ThemedText>
-        
-        <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
-          <Ionicons
-            name="chevron-forward"
-            size={24}
-            color={isDark ? '#fff' : '#000'}
-          />
+
+        <TouchableOpacity onPress={goToNextMonth} style={[styles.navButton, { backgroundColor: theme.divider }]}>
+          <Ionicons name="chevron-forward" size={18} color={theme.tint} />
         </TouchableOpacity>
       </View>
 
@@ -145,61 +97,34 @@ export function TransactionCalendar({ transactions }: TransactionCalendarProps) 
       <View style={styles.weekDaysContainer}>
         {weekDays.map((day, index) => (
           <View key={index} style={styles.weekDay}>
-            <Text
-              style={[
-                styles.weekDayText,
-                isDark && styles.weekDayTextDark,
-              ]}>
-              {day}
-            </Text>
+            <Text style={[styles.weekDayText, { color: theme.textMuted }]}>{day}</Text>
           </View>
         ))}
       </View>
 
-      {/* Grid del calendario */}
+      {/* Grid */}
       <View style={styles.calendarGrid}>
         {calendarDays.map((dayData, index) => {
           if (dayData === null) {
             return <View key={index} style={styles.dayCell} />;
           }
 
-          const { day, hasIncome, hasExpense, count } = dayData || {};
+          const { day, hasIncome, hasExpense, count } = dayData;
 
           return (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.dayCell,
-                isDark && styles.dayCellDark,
-              ]}>
+            <TouchableOpacity key={index} style={styles.dayCell} activeOpacity={0.7}>
               <View style={styles.dayContent}>
-                <Text
-                  style={[
-                    styles.dayText,
-                    isDark && styles.dayTextDark,
-                  ]}>
-                  {day}
-                </Text>
+                <Text style={[styles.dayText, { color: theme.text }]}>{day}</Text>
                 {count && count > 0 && (
                   <View style={styles.iconContainer}>
                     {hasIncome && (
-                      <Ionicons
-                        name="arrow-up-circle"
-                        size={10}
-                        color="#4ADE80"
-                        style={styles.icon}
-                      />
+                      <Ionicons name="arrow-up-circle" size={10} color={theme.income} style={styles.icon} />
                     )}
                     {hasExpense && (
-                      <Ionicons
-                        name="arrow-down-circle"
-                        size={10}
-                        color="#F87171"
-                        style={styles.icon}
-                      />
+                      <Ionicons name="arrow-down-circle" size={10} color={theme.expense} style={styles.icon} />
                     )}
                     {count > 1 && (
-                      <View style={[styles.badge, isDark && styles.badgeDark]}>
+                      <View style={[styles.badge, { backgroundColor: theme.tint }]}>
                         <Text style={styles.badgeText}>{count}</Text>
                       </View>
                     )}
@@ -210,29 +135,19 @@ export function TransactionCalendar({ transactions }: TransactionCalendarProps) 
           );
         })}
       </View>
-
-      
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     margin: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
-  },
-  containerDark: {
-    backgroundColor: '#1F1F1F',
   },
   header: {
     flexDirection: 'row',
@@ -241,11 +156,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   navButton: {
-    padding: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   monthTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   weekDaysContainer: {
     flexDirection: 'row',
@@ -254,15 +173,11 @@ const styles = StyleSheet.create({
   weekDay: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   weekDayText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#666',
-  },
-  weekDayTextDark: {
-    color: '#999',
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -275,9 +190,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 2,
   },
-  dayCellDark: {
-    // Estilos adicionales si es necesario
-  },
   dayContent: {
     width: '100%',
     height: '100%',
@@ -289,11 +201,7 @@ const styles = StyleSheet.create({
   dayText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#000',
     lineHeight: 16,
-  },
-  dayTextDark: {
-    color: '#fff',
   },
   iconContainer: {
     flexDirection: 'row',
@@ -306,7 +214,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   badge: {
-    backgroundColor: '#1E3A8A',
     borderRadius: 8,
     minWidth: 14,
     height: 14,
@@ -314,34 +221,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  badgeDark: {
-    backgroundColor: '#1E40AF',
-  },
   badgeText: {
     color: '#fff',
     fontSize: 8,
     fontWeight: '700',
   },
-  legend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 24,
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  legendTextDark: {
-    color: '#999',
-  },
 });
-

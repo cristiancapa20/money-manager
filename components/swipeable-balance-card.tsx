@@ -1,8 +1,10 @@
-import { StyleSheet, View, PanResponder } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useRef } from 'react';
+import { PanResponder, StyleSheet, View } from 'react-native';
+import type { Transaction } from './add-transaction-modal';
 import { BalanceCard } from './balance-card';
 import type { Card } from '@/types/card';
-import type { Transaction } from './add-transaction-modal';
-import { useRef } from 'react';
 
 interface SwipeableBalanceCardProps {
   cards: Card[];
@@ -17,6 +19,9 @@ export function SwipeableBalanceCard({
   onCardChange,
   transactions,
 }: SwipeableBalanceCardProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
+
   if (cards.length === 0) {
     return null;
   }
@@ -96,7 +101,8 @@ export function SwipeableBalanceCard({
                 key={index}
                 style={[
                   styles.indicator,
-                  index === selectedCardIndex && styles.indicatorActive,
+                  { backgroundColor: theme.border },
+                  index === selectedCardIndex && [styles.indicatorActive, { backgroundColor: theme.tint }],
                 ]}
               />
             ))}
@@ -122,11 +128,9 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#D1D5DB',
   },
   indicatorActive: {
     width: 24,
-    backgroundColor: '#1E3A8A',
   },
 });
 

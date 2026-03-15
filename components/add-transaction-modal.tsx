@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { categoryMap } from '@/utils/categories';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,7 +45,9 @@ export function AddTransactionModal({
   cardId,
   editingTransaction,
 }: AddTransactionModalProps) {
-  const theme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -64,12 +67,10 @@ export function AddTransactionModal({
   }, [editingTransaction, visible]);
 
   const handleSave = () => {
-    if (!title.trim() || !amount.trim() || !category || !cardId) {
-      return;
-    }
+    if (!title.trim() || !amount.trim() || !category || !cardId) return;
 
     const transaction: Transaction = {
-      id: editingTransaction?.id, // Mantener el ID si está editando
+      id: editingTransaction?.id,
       title: title.trim(),
       description: description.trim(),
       amount: parseFloat(amount) || 0,
@@ -95,6 +96,17 @@ export function AddTransactionModal({
     onClose();
   };
 
+  const isValid = title.trim() && amount.trim() && category && cardId;
+
+  const inputStyle = [
+    styles.input,
+    {
+      backgroundColor: theme.input,
+      borderColor: theme.inputBorder,
+      color: theme.text,
+    },
+  ];
+
   return (
     <Modal
       visible={visible}
@@ -103,59 +115,57 @@ export function AddTransactionModal({
       onRequestClose={handleClose}>
       <View style={styles.modalOverlay}>
         <ThemedView style={styles.modalContent}>
-          <View style={[styles.modalHeader, theme === 'dark' && styles.modalHeaderDark]}>
+          {/* Header */}
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
             <ThemedText type="title">
               {editingTransaction ? 'Editar Transacción' : 'Nueva Transacción'}
             </ThemedText>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={theme === 'light' ? '#000' : '#fff'} />
+              <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-            {/* Tipo de Transacción */}
+            {/* Tipo */}
             <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.label}>
-                Tipo
-              </ThemedText>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Tipo</Text>
               <View style={styles.typeContainer}>
+                {/* Ingreso */}
                 <TouchableOpacity
                   style={[
                     styles.typeButton,
-                    type === 'income' && styles.typeButtonActive,
-                    type === 'income' && styles.typeButtonIncome,
+                    {
+                      borderColor: type === 'income' ? theme.income : theme.border,
+                      backgroundColor: type === 'income' ? theme.income : theme.card,
+                    },
                   ]}
                   onPress={() => setType('income')}>
                   <Ionicons
                     name="arrow-up"
-                    size={20}
-                    color={type === 'income' ? '#fff' : '#4ADE80'}
+                    size={18}
+                    color={type === 'income' ? '#fff' : theme.income}
                   />
-                  <Text
-                    style={[
-                      styles.typeButtonText,
-                      type === 'income' && styles.typeButtonTextActive,
-                    ]}>
+                  <Text style={[styles.typeButtonText, { color: type === 'income' ? '#fff' : theme.textSecondary }]}>
                     Ingreso
                   </Text>
                 </TouchableOpacity>
+
+                {/* Gasto */}
                 <TouchableOpacity
                   style={[
                     styles.typeButton,
-                    type === 'expense' && styles.typeButtonActive,
-                    type === 'expense' && styles.typeButtonExpense,
+                    {
+                      borderColor: type === 'expense' ? theme.expense : theme.border,
+                      backgroundColor: type === 'expense' ? theme.expense : theme.card,
+                    },
                   ]}
                   onPress={() => setType('expense')}>
                   <Ionicons
                     name="arrow-down"
-                    size={20}
-                    color={type === 'expense' ? '#fff' : '#F87171'}
+                    size={18}
+                    color={type === 'expense' ? '#fff' : theme.expense}
                   />
-                  <Text
-                    style={[
-                      styles.typeButtonText,
-                      type === 'expense' && styles.typeButtonTextActive,
-                    ]}>
+                  <Text style={[styles.typeButtonText, { color: type === 'expense' ? '#fff' : theme.textSecondary }]}>
                     Gasto
                   </Text>
                 </TouchableOpacity>
@@ -164,36 +174,25 @@ export function AddTransactionModal({
 
             {/* Título */}
             <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.label}>
-                Título
-              </ThemedText>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Título</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  theme === 'dark' && styles.inputDark,
-                ]}
+                style={inputStyle}
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Ej: Compra de supermercado"
-                placeholderTextColor={theme === 'light' ? '#999' : '#666'}
+                placeholderTextColor={theme.textMuted}
               />
             </View>
 
             {/* Descripción */}
             <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.label}>
-                Descripción
-              </ThemedText>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Descripción</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  theme === 'dark' && styles.inputDark,
-                ]}
+                style={[inputStyle, styles.textArea]}
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Descripción opcional..."
-                placeholderTextColor={theme === 'light' ? '#999' : '#666'}
+                placeholderTextColor={theme.textMuted}
                 multiline
                 numberOfLines={3}
               />
@@ -201,27 +200,20 @@ export function AddTransactionModal({
 
             {/* Cantidad */}
             <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.label}>
-                Cantidad
-              </ThemedText>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Cantidad</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  theme === 'dark' && styles.inputDark,
-                ]}
+                style={inputStyle}
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="0.00"
-                placeholderTextColor={theme === 'light' ? '#999' : '#666'}
+                placeholderTextColor={theme.textMuted}
                 keyboardType="decimal-pad"
               />
             </View>
 
             {/* Categoría */}
             <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.label}>
-                Categoría
-              </ThemedText>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Categoría</Text>
               <View style={styles.categoriesGrid}>
                 {categories.map((cat) => {
                   const isSelected = category === cat.name;
@@ -230,28 +222,23 @@ export function AddTransactionModal({
                       key={cat.name}
                       style={[
                         styles.categoryButton,
-                        isSelected && styles.categoryButtonActive,
-                        theme === 'dark' && styles.categoryButtonDark,
-                        isSelected && { borderColor: cat.color },
+                        {
+                          backgroundColor: isSelected ? theme.card : theme.divider,
+                          borderColor: isSelected ? cat.color : 'transparent',
+                        },
                       ]}
                       onPress={() => setCategory(cat.name)}>
                       <View
                         style={[
                           styles.categoryIconContainer,
-                          { backgroundColor: `${cat.color}15` },
-                          isSelected && { backgroundColor: `${cat.color}30` },
+                          { backgroundColor: `${cat.color}${isSelected ? '30' : '18'}` },
                         ]}>
-                        <Ionicons
-                          name={cat.icon}
-                          size={24}
-                          color={cat.color}
-                        />
+                        <Ionicons name={cat.icon as any} size={24} color={cat.color} />
                       </View>
                       <Text
                         style={[
                           styles.categoryButtonText,
-                          { color: cat.color },
-                          isSelected && styles.categoryButtonTextSelected,
+                          { color: cat.color, fontWeight: isSelected ? '700' : '600' },
                         ]}
                         numberOfLines={1}>
                         {cat.name}
@@ -263,22 +250,27 @@ export function AddTransactionModal({
             </View>
           </ScrollView>
 
-          {/* Botones */}
-          <View style={[styles.modalFooter, theme === 'dark' && styles.modalFooterDark]}>
+          {/* Footer */}
+          <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton, theme === 'dark' && styles.cancelButtonDark]}
+              style={[styles.button, { backgroundColor: theme.divider }]}
               onPress={handleClose}>
-              <Text style={[styles.cancelButtonText, theme === 'dark' && styles.cancelButtonTextDark]}>Cancelar</Text>
+              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.button,
                 styles.saveButton,
-                (!title.trim() || !amount.trim() || !category || !cardId) && styles.saveButtonDisabled,
+                {
+                  backgroundColor: isValid ? theme.tint : theme.border,
+                  opacity: isValid ? 1 : 0.6,
+                },
               ]}
               onPress={handleSave}
-              disabled={!title.trim() || !amount.trim() || !category || !cardId}>
-              <Text style={styles.saveButtonText}>Guardar</Text>
+              disabled={!isValid}>
+              <Text style={styles.saveButtonText}>
+                {editingTransaction ? 'Actualizar' : 'Guardar'}
+              </Text>
             </TouchableOpacity>
           </View>
         </ThemedView>
@@ -290,13 +282,13 @@ export function AddTransactionModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '92%',
     paddingBottom: 20,
   },
   modalHeader: {
@@ -305,10 +297,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-  },
-  modalHeaderDark: {
-    borderBottomColor: '#333',
   },
   closeButton: {
     padding: 4,
@@ -320,55 +308,35 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 8,
-    fontSize: 16,
   },
   typeContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   typeButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E5E5',
-    gap: 8,
-  },
-  typeButtonActive: {
-    borderWidth: 2,
-  },
-  typeButtonIncome: {
-    backgroundColor: '#4ADE80',
-    borderColor: '#4ADE80',
-  },
-  typeButtonExpense: {
-    backgroundColor: '#F87171',
-    borderColor: '#F87171',
+    borderWidth: 1.5,
+    gap: 6,
   },
   typeButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#666',
-  },
-  typeButtonTextActive: {
-    color: '#fff',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: '#F9F9F9',
-  },
-  inputDark: {
-    backgroundColor: '#1F1F1F',
-    borderColor: '#333',
-    color: '#fff',
+    padding: 14,
+    fontSize: 15,
   },
   textArea: {
     height: 80,
@@ -377,25 +345,16 @@ const styles = StyleSheet.create({
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 4,
   },
   categoryButton: {
     width: '30%',
-    minWidth: 90,
+    minWidth: 88,
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  categoryButtonDark: {
-    backgroundColor: '#1F1F1F',
-  },
-  categoryButtonActive: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
+    padding: 10,
+    borderRadius: 14,
+    borderWidth: 1.5,
   },
   categoryIconContainer: {
     width: 48,
@@ -403,55 +362,33 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   categoryButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
     textAlign: 'center',
   },
   modalFooter: {
     flexDirection: 'row',
-    gap: 12,
-    padding: 20,
+    gap: 10,
+    padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-  },
-  modalFooterDark: {
-    borderTopColor: '#333',
   },
   button: {
     flex: 1,
-    padding: 16,
+    padding: 15,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#F3F4F6',
-  },
-  cancelButtonDark: {
-    backgroundColor: '#1F1F1F',
-  },
+  saveButton: {},
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#666',
-  },
-  cancelButtonTextDark: {
-    color: '#E5E5E5',
-  },
-  saveButton: {
-    backgroundColor: '#1E3A8A',
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-    opacity: 0.5,
   },
   saveButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#fff',
   },
 });
-

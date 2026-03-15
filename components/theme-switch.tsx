@@ -36,7 +36,7 @@ export function ThemeSwitch() {
           <Ionicons
             name={isDark ? 'moon' : 'sunny'}
             size={16}
-            color={isDark ? '#1E3A8A' : '#FFD700'}
+            color={isDark ? '#4f46e5' : '#FFD700'}
           />
         </Animated.View>
       </View>
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   switchTrackDark: {
-    backgroundColor: '#1E3A8A',
+    backgroundColor: '#4f46e5',
   },
   switchThumb: {
     width: 28,

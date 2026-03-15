@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Card } from '@/types/card';
 import { useMemo } from 'react';
@@ -16,8 +17,9 @@ interface BalanceChartProps {
 }
 
 export function BalanceChart({ transactions, cards }: BalanceChartProps) {
-  const theme = useColorScheme() ?? 'light';
-  const isDark = theme === 'dark';
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
+  const isDark = scheme === 'dark';
 
   // Calcular datos del gráfico
   const { chartData, maxBalance, minBalance, currentBalance } = useMemo(() => {
@@ -106,7 +108,7 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <ThemedView style={[styles.container, isDark && styles.containerDark]}>
+      <ThemedView style={styles.container}>
         <ThemedText type="subtitle" style={styles.title}>
           Gráfica de Balance
         </ThemedText>
@@ -119,16 +121,16 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
     );
   }
 
-  const textColor = isDark ? '#fff' : '#000';
-  const gridColor = isDark ? '#333' : '#E5E5E5';
-  const lineColor = isDark ? '#60A5FA' : '#1E3A8A';
+  const textColor = theme.text;
+  const gridColor = theme.border;
+  const lineColor = isDark ? '#818cf8' : '#4f46e5';
 
   return (
-    <ThemedView style={[styles.container, isDark && styles.containerDark]}>
+    <ThemedView style={[styles.container, { borderColor: theme.border }]}>
       <ThemedText type="subtitle" style={styles.title}>
         Gráfica de Balance
       </ThemedText>
-      
+
       <View style={styles.chartContainer}>
         <LineChart
           data={chartData}
@@ -152,7 +154,7 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
           curved
           areaChart
           startFillColor={lineColor}
-          endFillColor={isDark ? '#1E3A8A30' : '#1E3A8A15'}
+          endFillColor={isDark ? '#4f46e530' : '#4f46e515'}
           startOpacity={0.4}
           endOpacity={0.1}
           hideDataPoints={chartData.length > 10}
@@ -175,12 +177,12 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
       </View>
 
       {/* Balance actual */}
-      <View style={styles.balanceInfo}>
+      <View style={[styles.balanceInfo, { borderTopColor: theme.border }]}>
         <ThemedText style={styles.balanceLabel}>Balance Actual:</ThemedText>
         <ThemedText
           style={[
             styles.balanceValue,
-            { color: currentBalance >= 0 ? '#4ADE80' : '#F87171' },
+            { color: currentBalance >= 0 ? theme.income : theme.expense },
           ]}>
           ${currentBalance.toLocaleString('es-MX', {
             minimumFractionDigits: 2,
@@ -194,22 +196,15 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     margin: 16,
     marginTop: 0,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
-  },
-  containerDark: {
-    backgroundColor: '#1F1F1F',
   },
   title: {
     marginBottom: 16,
@@ -239,7 +234,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
   },
   balanceLabel: {
     fontSize: 14,

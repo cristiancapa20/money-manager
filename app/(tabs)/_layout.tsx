@@ -1,22 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { CenterTabButton } from '@/components/center-tab-button';
 import { HapticTab } from '@/components/haptic-tab';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const theme = Colors[isDark ? 'dark' : 'light'];
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#FFFFFF',
-        tabBarInactiveTintColor: '#FFFFFF',
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarActiveTintColor: theme.tabIconSelected,
+        tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarStyle: {
           position: 'absolute',
           bottom: 20,
@@ -24,46 +26,50 @@ export default function TabLayout() {
           right: 20,
           height: 70,
           borderRadius: 25,
-          backgroundColor: '#4d6080',
+          backgroundColor: theme.background,
           borderTopWidth: 0,
           paddingBottom: 10,
           paddingTop: 5,
           paddingHorizontal: 10,
           shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: 4,
-          },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 12,
+          elevation: 10,
           ...Platform.select({
-            ios: {
-              borderTopWidth: 0,
-            },
-            android: {
-              borderTopWidth: 0,
-            },
+            ios:     { borderTopWidth: 0 },
+            android: { borderTopWidth: 0 },
           }),
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
-          color: '#FFFFFF',
         },
-        
         tabBarShowLabel: true,
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "wallet" : "wallet-outline"} 
-              size={focused ? 26 : 24} 
-              color="#FFFFFF"
-            />
+          tabBarIcon: ({ focused }) => (
+            <View style={{ alignItems: 'center' }}>
+              {focused && (
+                <View style={{
+                  position: 'absolute',
+                  top: -8,
+                  width: 20,
+                  height: 2,
+                  borderRadius: 1,
+                  backgroundColor: theme.tabIconSelected,
+                }} />
+              )}
+              <Ionicons
+                name={focused ? 'wallet' : 'wallet-outline'}
+                size={focused ? 24 : 22}
+                color={focused ? theme.tabIconSelected : theme.tabIconDefault}
+              />
+            </View>
           ),
         }}
       />
@@ -80,12 +86,24 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: 'Estadísticas',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "analytics" : "analytics-outline"} 
-              size={focused ? 26 : 24} 
-              color="#FFFFFF"
-            />
+          tabBarIcon: ({ focused }) => (
+            <View style={{ alignItems: 'center' }}>
+              {focused && (
+                <View style={{
+                  position: 'absolute',
+                  top: -8,
+                  width: 20,
+                  height: 2,
+                  borderRadius: 1,
+                  backgroundColor: theme.tabIconSelected,
+                }} />
+              )}
+              <Ionicons
+                name={focused ? 'analytics' : 'analytics-outline'}
+                size={focused ? 24 : 22}
+                color={focused ? theme.tabIconSelected : theme.tabIconDefault}
+              />
+            </View>
           ),
         }}
       />

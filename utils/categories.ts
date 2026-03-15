@@ -24,3 +24,5 @@ export function getCategoryInfo(categoryName: string): CategoryInfo {
   return categoryMap[categoryName] || categoryMap['Otros'];
 }
 
+
+

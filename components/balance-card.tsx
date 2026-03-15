@@ -1,4 +1,5 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
 
 interface BalanceCardProps {
@@ -10,19 +11,22 @@ interface BalanceCardProps {
 }
 
 export function BalanceCard({ balance, income, expenses, cardName, cardColor }: BalanceCardProps) {
-  const theme = useColorScheme() ?? 'light';
-  const backgroundColor = cardColor || (theme === 'dark' ? '#1E40AF' : '#1E3A8A');
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
+  const backgroundColor = cardColor || theme.tint;
 
   return (
     <View style={[styles.card, { backgroundColor }]}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{cardName || 'Balance Total'}</Text>
       </View>
+
       <View style={styles.cardBody}>
         <Text style={styles.balanceAmount}>
           ${balance.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </Text>
       </View>
+
       <View style={styles.cardFooter}>
         <View style={styles.cardInfo}>
           <Text style={styles.incomeLabel}>Ingresos</Text>
@@ -30,6 +34,7 @@ export function BalanceCard({ balance, income, expenses, cardName, cardColor }: 
             ${income.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
         </View>
+        <View style={styles.divider} />
         <View style={styles.cardInfo}>
           <Text style={styles.expenseLabel}>Gastos</Text>
           <Text style={styles.expenseValue}>
@@ -43,67 +48,71 @@ export function BalanceCard({ balance, income, expenses, cardName, cardColor }: 
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 0,
+    borderRadius: 20,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
     elevation: 8,
   },
   cardHeader: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   cardTitle: {
-    fontSize: 12,
-    color: '#E0E7FF',
-    opacity: 0.8,
-    fontWeight: '500',
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   cardBody: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   balanceAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderTopColor: 'rgba(255,255,255,0.2)',
+    gap: 16,
+  },
+  divider: {
+    width: 1,
+    height: 32,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   cardInfo: {
     flex: 1,
   },
   incomeLabel: {
-    fontSize: 11,
-    color: '#4ADE80',
-    opacity: 0.9,
-    marginBottom: 4,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.65)',
+    marginBottom: 3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   incomeValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4ADE80',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#86efac',
   },
   expenseLabel: {
-    fontSize: 11,
-    color: '#F87171',
-    opacity: 0.9,
-    marginBottom: 4,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.65)',
+    marginBottom: 3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   expenseValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#F87171',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fca5a5',
   },
 });
-

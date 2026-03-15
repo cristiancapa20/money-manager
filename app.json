@@ -25,6 +25,10 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "updates": {
+      "checkAutomatically": "NEVER",
+      "enabled": false
+    },
     "plugins": [
       "expo-router",
       [

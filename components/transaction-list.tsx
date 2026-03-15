@@ -1,6 +1,7 @@
 import type { Transaction } from '@/components/add-transaction-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getCategoryInfo } from '@/utils/categories';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,49 +14,52 @@ interface TransactionListProps {
   onEditTransaction?: (transaction: Transaction) => void;
 }
 
-export function TransactionList({
-  transactions,
-  balanceCard,
-  onEditTransaction,
-}: TransactionListProps) {
-  const theme = useColorScheme() ?? 'light';
+export function TransactionList({ transactions, balanceCard, onEditTransaction }: TransactionListProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
 
   const sortedTransactions = [...transactions].sort((a, b) => {
-    const aDate = (a as any).createdAt 
+    const aDate = (a as any).createdAt
       ? new Date((a as any).createdAt).getTime()
       : (a.id && !isNaN(parseInt(a.id)) ? parseInt(a.id) : 0);
-    const bDate = (b as any).createdAt 
+    const bDate = (b as any).createdAt
       ? new Date((b as any).createdAt).getTime()
       : (b.id && !isNaN(parseInt(b.id)) ? parseInt(b.id) : 0);
-    
-    return aDate - bDate;
+    return bDate - aDate; // más recientes primero
   });
 
   const ListHeaderComponent = () => (
     <View style={styles.headerContainer}>
       {balanceCard}
       {balanceCard && transactions.length > 0 && (
-        <ThemedText type="subtitle" style={styles.title}>
-          Transacciones
-        </ThemedText>
+        <View style={styles.sectionHeader}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Transacciones
+          </ThemedText>
+          <View style={[styles.countBadge, { backgroundColor: theme.tintLight }]}>
+            <Text style={[styles.countText, { color: theme.tint }]}>{transactions.length}</Text>
+          </View>
+        </View>
       )}
     </View>
   );
 
   const ListEmptyComponent = () => (
     <ThemedView style={styles.emptyContainer}>
-      <Ionicons
-        name={balanceCard ? "receipt-outline" : "card-outline"}
-        size={48}
-        color={theme === 'light' ? '#9CA3AF' : '#6B7280'}
-      />
+      <View style={[styles.emptyIconWrap, { backgroundColor: theme.tintLight }]}>
+        <Ionicons
+          name={balanceCard ? 'receipt-outline' : 'card-outline'}
+          size={32}
+          color={theme.tint}
+        />
+      </View>
       <ThemedText style={styles.emptyText}>
-        {balanceCard ? 'No hay transacciones' : 'Selecciona o crea una tarjeta'}
+        {balanceCard ? 'Sin transacciones' : 'Ninguna cuenta seleccionada'}
       </ThemedText>
-      <ThemedText style={styles.emptySubtext}>
+      <ThemedText style={[styles.emptySubtext, { color: theme.textMuted }]}>
         {balanceCard
-          ? 'Presiona el botón + para agregar una'
-          : 'Usa el selector de tarjetas para comenzar'}
+          ? 'Presiona + para agregar una'
+          : 'Usa el selector de cuentas para comenzar'}
       </ThemedText>
     </ThemedView>
   );
@@ -64,12 +68,9 @@ export function TransactionList({
     <View style={styles.container}>
       <FlatList
         data={sortedTransactions}
-        keyExtractor={(item, index) => `${item.title}-${index}-${item.amount}`}
+        keyExtractor={(item, index) => item.id ?? `tx-${index}-${item.title}-${item.amount}`}
         renderItem={({ item }) => (
-          <TransactionItem
-            transaction={item}
-            onEdit={onEditTransaction}
-          />
+          <TransactionItem transaction={item} onEdit={onEditTransaction} />
         )}
         ListHeaderComponent={ListHeaderComponent}
         ListEmptyComponent={ListEmptyComponent}
@@ -80,196 +81,250 @@ export function TransactionList({
   );
 }
 
+// ─── Item ────────────────────────────────────────────────────────────────────
+
 interface TransactionItemProps {
   transaction: Transaction;
   onEdit?: (transaction: Transaction) => void;
 }
 
 function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
-  const theme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
   const isIncome = transaction.type === 'income';
-  const amountColor = isIncome ? '#4ADE80' : '#F87171';
-  const iconName = isIncome ? 'arrow-up-circle' : 'arrow-down-circle';
   const categoryInfo = getCategoryInfo(transaction.category);
 
+  // ── Parsear fecha ──
+  let dateParts: { day: string; dayName: string; month: string } | null = null;
+  const rawDate = (transaction as any).createdAt
+    ? new Date((transaction as any).createdAt)
+    : transaction.id && !isNaN(parseInt(transaction.id))
+    ? new Date(parseInt(transaction.id))
+    : null;
+
+  if (rawDate && !isNaN(rawDate.getTime())) {
+    dateParts = {
+      day:     rawDate.getDate().toString(),
+      dayName: rawDate.toLocaleDateString('es-EC', { weekday: 'short' }).replace('.', '').toUpperCase(),
+      month:   rawDate.toLocaleDateString('es-EC', { month: 'short' }).replace('.', '').toUpperCase(),
+    };
+  }
+
   return (
-    <ThemedView
+    <View
       style={[
         styles.item,
-        theme === 'dark' && styles.itemDark,
-      ]}>
-      <View style={styles.itemLeft}>
-        <View
-          style={[
-            styles.iconContainer,
-            isIncome ? styles.iconContainerIncome : styles.iconContainerExpense,
-          ]}>
-          <Ionicons name={iconName} size={20} color={isIncome ? '#4ADE80' : '#F87171'} />
+        {
+          backgroundColor: theme.card,
+          borderColor: theme.border,
+        },
+      ]}
+    >
+      {/* Left date panel — estilo Finance Tracker móvil */}
+      {dateParts && (
+        <View style={[styles.datePanelOuter, { backgroundColor: theme.divider, borderRightColor: theme.border }]}>
+          <Text style={[styles.dateDay, { color: theme.text }]}>{dateParts.day}</Text>
+          <Text style={[styles.dateDayName, { color: theme.textSecondary }]}>{dateParts.dayName}</Text>
+          <Text style={[styles.dateMonth, { color: theme.textMuted }]}>{dateParts.month}</Text>
         </View>
-        <View style={styles.itemInfo}>
-          <ThemedText type="defaultSemiBold" style={styles.itemTitle}>
-            {transaction.title}
-          </ThemedText>
-          <View style={styles.itemMeta}>
-            <View style={styles.categoryContainer}>
-              <Ionicons
-                name={categoryInfo.icon as any}
-                size={14}
-                color={categoryInfo.color}
-              />
-              <ThemedText style={[styles.itemCategory, { color: categoryInfo.color }]}>
-                {transaction.category}
-              </ThemedText>
+      )}
+
+      {/* Right content */}
+      <View style={styles.itemContent}>
+        {/* Top row: description + amount */}
+        <View style={styles.itemTop}>
+          <View style={styles.itemLeft}>
+            <View
+              style={[
+                styles.categoryDot,
+                { backgroundColor: categoryInfo.color + '22' },
+              ]}
+            >
+              <Ionicons name={categoryInfo.icon as any} size={16} color={categoryInfo.color} />
             </View>
-            {transaction.description ? (
-              <>
-                <ThemedText style={styles.itemSeparator}>•</ThemedText>
-                <ThemedText style={styles.itemDescription} numberOfLines={1}>
-                  {transaction.description}
-                </ThemedText>
-              </>
-            ) : null}
+            <View style={styles.itemInfo}>
+              <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={1}>
+                {transaction.title}
+              </Text>
+              <View style={styles.itemMeta}>
+                <Text style={[styles.itemCategory, { color: categoryInfo.color }]}>
+                  {transaction.category}
+                </Text>
+                {transaction.description ? (
+                  <>
+                    <Text style={[styles.sep, { color: theme.textMuted }]}>·</Text>
+                    <Text style={[styles.itemDesc, { color: theme.textSecondary }]} numberOfLines={1}>
+                      {transaction.description}
+                    </Text>
+                  </>
+                ) : null}
+              </View>
+            </View>
           </View>
-          {(() => {
-            let dateTime: string = '';
-            if ((transaction as any).createdAt) {
-              // La fecha viene en UTC, convertir a zona horaria local
-              const utcDate = new Date((transaction as any).createdAt);
-              if (!isNaN(utcDate.getTime())) {
-                // Usar toLocaleString para obtener la fecha en la zona horaria local
-                const day = utcDate.getDate();
-                const month = utcDate.toLocaleDateString('es-EC', { month: 'short' });
-                const year = utcDate.getFullYear();
-                const hours = utcDate.getHours().toString().padStart(2, '0');
-                const minutes = utcDate.getMinutes().toString().padStart(2, '0');
-                dateTime = `${day} ${month} ${year} • ${hours}:${minutes}`;
-              }
-            } else if (transaction.id && !isNaN(parseInt(transaction.id))) {
-              const date = new Date(parseInt(transaction.id));
-              if (!isNaN(date.getTime())) {
-                const day = date.getDate();
-                const month = date.toLocaleDateString('es-EC', { month: 'short' });
-                const year = date.getFullYear();
-                const hours = date.getHours().toString().padStart(2, '0');
-                const minutes = date.getMinutes().toString().padStart(2, '0');
-                dateTime = `${day} ${month} ${year} • ${hours}:${minutes}`;
-              }
-            }
-            
-            return dateTime ? (
-              <ThemedText style={styles.itemDateTime}>
-                {dateTime}
-              </ThemedText>
-            ) : null;
-          })()}
+
+          <Text
+            style={[
+              styles.itemAmount,
+              { color: isIncome ? theme.income : theme.expense },
+            ]}
+          >
+            {isIncome ? '+' : '-'}$
+            {transaction.amount.toLocaleString('es-MX', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </Text>
+        </View>
+
+        {/* Bottom row: type badge + edit */}
+        <View style={[styles.itemBottom, { borderTopColor: theme.divider }]}>
+          <View
+            style={[
+              styles.typeBadge,
+              {
+                backgroundColor: isIncome ? theme.incomeBg : theme.expenseBg,
+              },
+            ]}
+          >
+            <Ionicons
+              name={isIncome ? 'trending-up' : 'trending-down'}
+              size={11}
+              color={isIncome ? theme.income : theme.expense}
+            />
+            <Text style={[styles.typeBadgeText, { color: isIncome ? theme.income : theme.expense }]}>
+              {isIncome ? 'Ingreso' : 'Gasto'}
+            </Text>
+          </View>
+
+          {onEdit && (
+            <TouchableOpacity
+              style={[styles.editBtn, { backgroundColor: theme.tintLight }]}
+              onPress={() => onEdit(transaction)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="pencil-outline" size={14} color={theme.tint} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
-      <View style={styles.itemRight}>
-        <Text style={[styles.itemAmount, { color: amountColor }]}>
-          {isIncome ? '+' : '-'}$
-          {transaction.amount.toLocaleString('es-MX', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
-        </Text>
-        {onEdit && (
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => onEdit(transaction)}
-            activeOpacity={0.7}>
-            <Ionicons
-              name="create-outline"
-              size={18}
-              color={theme === 'light' ? '#666' : '#9CA3AF'}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerContainer: {
-    paddingHorizontal: 20,
-  },
-  title: {
-    marginTop: 20,
-    marginBottom: 16,
-  },
+  container: { flex: 1 },
+  headerContainer: { paddingHorizontal: 20 },
   listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 120, // Espacio para el botón flotante y tab bar
+    paddingHorizontal: 16,
+    paddingBottom: 120,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  countText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   emptyContainer: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
     paddingHorizontal: 20,
   },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   emptyText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    marginTop: 16,
-    opacity: 0.7,
+    marginBottom: 6,
   },
   emptySubtext: {
     fontSize: 14,
-    marginTop: 8,
-    opacity: 0.5,
     textAlign: 'center',
+    lineHeight: 20,
   },
+  // ── Item ──────────────────────────────────────────────────────────────────
   item: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    backgroundColor: '#F9F9F9',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    marginBottom: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  itemDark: {
-    backgroundColor: '#1F1F1F',
+  datePanelOuter: {
+    minWidth: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderRightWidth: 1,
+  },
+  dateDay: {
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  dateDayName: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  dateMonth: {
+    fontSize: 10,
+    marginTop: 1,
+  },
+  itemContent: {
+    flex: 1,
+  },
+  itemTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
   },
   itemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginRight: 12,
+    marginRight: 8,
+    gap: 10,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+  categoryDot: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  iconContainerIncome: {
-    backgroundColor: '#D1FAE5',
-  },
-  iconContainerExpense: {
-    backgroundColor: '#FEE2E2',
+    flexShrink: 0,
   },
   itemInfo: {
     flex: 1,
   },
   itemTitle: {
-    fontSize: 16,
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
   },
   itemMeta: {
     flexDirection: 'row',
@@ -277,41 +332,48 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 4,
   },
-  categoryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
   itemCategory: {
     fontSize: 12,
     fontWeight: '600',
   },
-  itemSeparator: {
+  sep: {
     fontSize: 12,
-    opacity: 0.4,
-    marginHorizontal: 6,
+    marginHorizontal: 2,
   },
-  itemDescription: {
+  itemDesc: {
     fontSize: 12,
-    opacity: 0.6,
     flex: 1,
   },
-  itemDateTime: {
-    fontSize: 11,
-    opacity: 0.5,
-  },
-  itemRight: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
   itemAmount: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
+    flexShrink: 0,
   },
-  editButton: {
-    padding: 6,
+  itemBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderTopWidth: 1,
+  },
+  typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  editBtn: {
+    width: 28,
+    height: 28,
     borderRadius: 8,
-    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
-

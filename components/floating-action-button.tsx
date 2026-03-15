@@ -1,3 +1,5 @@
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
@@ -6,8 +8,11 @@ interface FloatingActionButtonProps {
 }
 
 export function FloatingActionButton({ onPress }: FloatingActionButtonProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
+
   return (
-    <TouchableOpacity style={styles.fab} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={[styles.fab, { backgroundColor: theme.tint, shadowColor: theme.tint }]} onPress={onPress} activeOpacity={0.8}>
       <Ionicons name="add" size={28} color="#FFFFFF" />
     </TouchableOpacity>
   );
@@ -21,7 +26,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#1E3A8A',
+    backgroundColor: '#4f46e5', // fallback; overridden dynamically above
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

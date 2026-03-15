@@ -47,12 +47,16 @@ function RootLayoutContent() {
 
   if (isLoading) return null;
 
+  // Colores de fondo según tema — evita el flash blanco en transiciones del Stack
+  const bg = colorScheme === 'dark' ? '#0f172a' : '#f9fafb';
+
   return (
     <AppProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
+        <Stack screenOptions={{ contentStyle: { backgroundColor: bg } }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="profile" options={{ headerShown: false, animation: 'slide_from_right' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar style="auto" />

@@ -3,10 +3,12 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Card } from '@/types/card';
+import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/types/card';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,42 +19,45 @@ import {
 interface AddCardModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (card: Omit<Card, 'id'>) => void;
+  onSave: (card: Omit<Card, 'id' | 'initialBalance' | 'userId'>) => void;
 }
 
 const cardColors = [
-  { name: 'Índigo',   value: '#4f46e5' },
-  { name: 'Verde',    value: '#059669' },
-  { name: 'Rojo',     value: '#DC2626' },
-  { name: 'Púrpura',  value: '#7C3AED' },
-  { name: 'Naranja',  value: '#EA580C' },
-  { name: 'Rosa',     value: '#DB2777' },
+  { name: 'Índigo',  value: '#4f46e5' },
+  { name: 'Verde',   value: '#059669' },
+  { name: 'Rojo',    value: '#DC2626' },
+  { name: 'Púrpura', value: '#7C3AED' },
+  { name: 'Naranja', value: '#EA580C' },
+  { name: 'Rosa',    value: '#DB2777' },
 ];
+
+const accountTypes: AccountType[] = ['checking', 'savings', 'cash', 'credit'];
+
+const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
+  checking: 'card-outline',
+  savings:  'wallet-outline',
+  cash:     'cash-outline',
+  credit:   'receipt-outline',
+};
 
 export function AddCardModal({ visible, onClose, onSave }: AddCardModalProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
 
   const [name, setName] = useState('');
-  const [initialBalance, setInitialBalance] = useState('');
   const [selectedColor, setSelectedColor] = useState(cardColors[0].value);
+  const [selectedType, setSelectedType] = useState<AccountType>('checking');
 
   const handleSave = () => {
-    if (!name.trim() || !initialBalance.trim()) return;
-
-    onSave({
-      name: name.trim(),
-      initialBalance: parseFloat(initialBalance) || 0,
-      color: selectedColor,
-    });
-
+    if (!name.trim()) return;
+    onSave({ name: name.trim(), color: selectedColor, type: selectedType });
     handleReset();
   };
 
   const handleReset = () => {
     setName('');
-    setInitialBalance('');
     setSelectedColor(cardColors[0].value);
+    setSelectedType('checking');
   };
 
   const handleClose = () => {
@@ -60,102 +65,98 @@ export function AddCardModal({ visible, onClose, onSave }: AddCardModalProps) {
     onClose();
   };
 
-  const isValid = name.trim() && initialBalance.trim();
-
-  const inputStyle = [
-    styles.input,
-    {
-      backgroundColor: theme.input,
-      borderColor: theme.inputBorder,
-      color: theme.text,
-    },
-  ];
+  const isValid = name.trim();
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={handleClose}>
-      <View style={styles.modalOverlay}>
-        <ThemedView style={styles.modalContent}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+      <View style={styles.overlay}>
+        <ThemedView style={styles.sheet}>
           {/* Header */}
-          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <ThemedText type="title">Nueva Cuenta</ThemedText>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.form}>
+          <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
             {/* Nombre */}
             <View style={styles.section}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Nombre de la Cuenta</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Nombre</Text>
               <TextInput
-                style={inputStyle}
+                style={[styles.input, { backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }]}
                 value={name}
                 onChangeText={setName}
-                placeholder="Ej: Cuenta Principal, Ahorros, etc."
+                placeholder="Ej: Cuenta Principal, Ahorros…"
                 placeholderTextColor={theme.textMuted}
               />
             </View>
 
-            {/* Balance Inicial */}
+            {/* Tipo de cuenta */}
             <View style={styles.section}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Balance Inicial</Text>
-              <TextInput
-                style={inputStyle}
-                value={initialBalance}
-                onChangeText={setInitialBalance}
-                placeholder="0.00"
-                placeholderTextColor={theme.textMuted}
-                keyboardType="decimal-pad"
-              />
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Tipo de cuenta</Text>
+              <View style={styles.typeGrid}>
+                {accountTypes.map((t) => {
+                  const active = selectedType === t;
+                  return (
+                    <TouchableOpacity
+                      key={t}
+                      style={[
+                        styles.typeOption,
+                        {
+                          backgroundColor: active ? theme.tintLight : theme.divider,
+                          borderColor: active ? theme.tint : 'transparent',
+                        },
+                      ]}
+                      onPress={() => setSelectedType(t)}>
+                      <Ionicons
+                        name={ACCOUNT_TYPE_ICONS[t] as any}
+                        size={20}
+                        color={active ? theme.tint : theme.textSecondary}
+                      />
+                      <Text style={[styles.typeLabel, { color: active ? theme.tint : theme.textSecondary }]}>
+                        {ACCOUNT_TYPE_LABELS[t]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
             {/* Color */}
             <View style={styles.section}>
               <Text style={[styles.label, { color: theme.textSecondary }]}>Color</Text>
-              <View style={styles.colorsContainer}>
-                {cardColors.map((color) => (
+              <View style={styles.colorsRow}>
+                {cardColors.map((c) => (
                   <TouchableOpacity
-                    key={color.value}
+                    key={c.value}
                     style={[
-                      styles.colorButton,
-                      { backgroundColor: color.value },
-                      selectedColor === color.value && styles.colorButtonActive,
+                      styles.colorDot,
+                      { backgroundColor: c.value },
+                      selectedColor === c.value && styles.colorDotActive,
                     ]}
-                    onPress={() => setSelectedColor(color.value)}>
-                    {selectedColor === color.value && (
-                      <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                    onPress={() => setSelectedColor(c.value)}>
+                    {selectedColor === c.value && (
+                      <Ionicons name="checkmark" size={18} color="#fff" />
                     )}
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
-          </View>
+          </ScrollView>
 
           {/* Footer */}
-          <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
+          <View style={[styles.footer, { borderTopColor: theme.border }]}>
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: theme.divider }]}
+              style={[styles.btn, { backgroundColor: theme.divider }]}
               onPress={handleClose}>
-              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>
-                Cancelar
-              </Text>
+              <Text style={[styles.cancelText, { color: theme.textSecondary }]}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.button,
-                styles.saveButton,
-                {
-                  backgroundColor: isValid ? theme.tint : theme.border,
-                  opacity: isValid ? 1 : 0.6,
-                },
-              ]}
+              style={[styles.btn, { backgroundColor: isValid ? theme.tint : theme.border, opacity: isValid ? 1 : 0.6 }]}
               onPress={handleSave}
               disabled={!isValid}>
-              <Text style={styles.saveButtonText}>Guardar</Text>
+              <Text style={styles.saveText}>Guardar</Text>
             </TouchableOpacity>
           </View>
         </ThemedView>
@@ -165,90 +166,22 @@ export function AddCardModal({ visible, onClose, onSave }: AddCardModalProps) {
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '90%',
-    paddingBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  form: {
-    padding: 20,
-  },
-  section: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-  },
-  colorsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 8,
-  },
-  colorButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'transparent',
-  },
-  colorButtonActive: {
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    gap: 10,
-    padding: 16,
-    borderTopWidth: 1,
-  },
-  button: {
-    flex: 1,
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveButton: {},
-  cancelButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  saveButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-  },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%', paddingBottom: 20 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1 },
+  closeBtn: { padding: 4 },
+  form: { padding: 20 },
+  section: { marginBottom: 20 },
+  label: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15 },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  typeOption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, minWidth: '45%' },
+  typeLabel: { fontSize: 13, fontWeight: '600' },
+  colorsRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
+  colorDot: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: 'transparent' },
+  colorDotActive: { borderColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
+  footer: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1 },
+  btn: { flex: 1, padding: 15, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  cancelText: { fontSize: 15, fontWeight: '600' },
+  saveText: { fontSize: 15, fontWeight: '600', color: '#fff' },
 });

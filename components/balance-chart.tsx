@@ -6,7 +6,7 @@ import type { Card } from '@/types/card';
 import { useMemo } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
-import type { Transaction } from './add-transaction-modal';
+import type { Transaction } from '@/types/transaction';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH = SCREEN_WIDTH - 64; // 32px padding on each side

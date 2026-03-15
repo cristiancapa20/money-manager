@@ -1,9 +1,8 @@
-import type { Transaction } from '@/components/add-transaction-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getCategoryInfo } from '@/utils/categories';
+import type { Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -19,13 +18,9 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
   const theme = Colors[scheme];
 
   const sortedTransactions = [...transactions].sort((a, b) => {
-    const aDate = (a as any).createdAt
-      ? new Date((a as any).createdAt).getTime()
-      : (a.id && !isNaN(parseInt(a.id)) ? parseInt(a.id) : 0);
-    const bDate = (b as any).createdAt
-      ? new Date((b as any).createdAt).getTime()
-      : (b.id && !isNaN(parseInt(b.id)) ? parseInt(b.id) : 0);
-    return bDate - aDate; // más recientes primero
+    const aTime = a.date ? new Date(a.date).getTime() : new Date(a.createdAt).getTime();
+    const bTime = b.date ? new Date(b.date).getTime() : new Date(b.createdAt).getTime();
+    return bTime - aTime; // más recientes primero
   });
 
   const ListHeaderComponent = () => (
@@ -68,7 +63,7 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
     <View style={styles.container}>
       <FlatList
         data={sortedTransactions}
-        keyExtractor={(item, index) => item.id ?? `tx-${index}-${item.title}-${item.amount}`}
+        keyExtractor={(item, index) => item.id ?? `tx-${index}-${item.amount}`}
         renderItem={({ item }) => (
           <TransactionItem transaction={item} onEdit={onEditTransaction} />
         )}
@@ -91,15 +86,18 @@ interface TransactionItemProps {
 function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const isIncome = transaction.type === 'income';
-  const categoryInfo = getCategoryInfo(transaction.category);
+  const isIncome = transaction.type === 'INCOME';
+  // Usar datos de categoría que vienen del JOIN de Turso
+  const catColor = transaction.categoryColor ?? '#6b7280';
+  const catIcon  = transaction.categoryIcon  ?? 'pricetag-outline';
+  const catName  = transaction.category      ?? 'Sin categoría';
 
   // ── Parsear fecha ──
   let dateParts: { day: string; dayName: string; month: string } | null = null;
-  const rawDate = (transaction as any).createdAt
-    ? new Date((transaction as any).createdAt)
-    : transaction.id && !isNaN(parseInt(transaction.id))
-    ? new Date(parseInt(transaction.id))
+  const rawDate = transaction.date
+    ? new Date(transaction.date)
+    : transaction.createdAt
+    ? new Date(transaction.createdAt)
     : null;
 
   if (rawDate && !isNaN(rawDate.getTime())) {
@@ -134,21 +132,16 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
         {/* Top row: description + amount */}
         <View style={styles.itemTop}>
           <View style={styles.itemLeft}>
-            <View
-              style={[
-                styles.categoryDot,
-                { backgroundColor: categoryInfo.color + '22' },
-              ]}
-            >
-              <Ionicons name={categoryInfo.icon as any} size={16} color={categoryInfo.color} />
+            <View style={[styles.categoryDot, { backgroundColor: catColor + '22' }]}>
+              <Ionicons name={catIcon as any} size={16} color={catColor} />
             </View>
             <View style={styles.itemInfo}>
               <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={1}>
-                {transaction.title}
+                {catName}
               </Text>
               <View style={styles.itemMeta}>
-                <Text style={[styles.itemCategory, { color: categoryInfo.color }]}>
-                  {transaction.category}
+                <Text style={[styles.itemCategory, { color: catColor }]}>
+                  {catName}
                 </Text>
                 {transaction.description ? (
                   <>

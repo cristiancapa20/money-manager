@@ -16,7 +16,7 @@ export default function StatsScreen() {
 
   const cardTransactions = useMemo(() => {
     if (!selectedCard) return [];
-    return transactions.filter((t) => t.cardId === selectedCard.id);
+    return transactions.filter((t) => t.accountId === selectedCard.id);
   }, [transactions, selectedCard]);
 
   const selectedCards = useMemo(() => {

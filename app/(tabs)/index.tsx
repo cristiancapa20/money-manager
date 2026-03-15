@@ -1,5 +1,6 @@
 import { AddCardModal } from '@/components/add-card-modal';
-import { AddTransactionModal, type Transaction } from '@/components/add-transaction-modal';
+import { AddTransactionModal } from '@/components/add-transaction-modal';
+import type { Transaction } from '@/types/transaction';
 import { CardCarousel } from '@/components/card-carousel';
 import { CardSelector } from '@/components/card-selector';
 import { ThemeSwitch } from '@/components/theme-switch';
@@ -42,7 +43,7 @@ export default function HomeScreen() {
 
   // Filtrar transacciones de la tarjeta seleccionada
   const cardTransactions = selectedCard
-    ? transactions.filter((t) => t.cardId === selectedCard.id)
+    ? transactions.filter((t) => t.accountId === selectedCard.id)
     : [];
 
   const handleEditTransaction = (transaction: Transaction) => {
@@ -50,18 +51,17 @@ export default function HomeScreen() {
     setTransactionModalVisible(true);
   };
 
-  const handleSaveTransaction = async (transaction: Transaction) => {
+  const handleSaveTransaction = async (tx: Omit<Transaction, 'id' | 'createdAt' | 'userId'>) => {
     try {
-      if (transaction.id) {
-        await updateTransaction(transaction);
+      if (editingTransaction?.id) {
+        await updateTransaction({ ...editingTransaction, ...tx });
       } else {
-        await addTransaction(transaction);
+        await addTransaction(tx);
       }
       setTransactionModalVisible(false);
       setEditingTransaction(null);
     } catch (error) {
       console.error('Error al guardar transacción:', error);
-      // Aquí podrías mostrar un mensaje de error al usuario
     }
   };
 
@@ -70,18 +70,12 @@ export default function HomeScreen() {
     setEditingTransaction(null);
   };
 
-  const handleSaveCard = async (cardData: { name: string; initialBalance: number; color?: string }) => {
+  const handleSaveCard = async (cardData: Omit<import('@/types/card').Card, 'id' | 'initialBalance' | 'userId'>) => {
     try {
-      const newCard = {
-        ...cardData,
-        id: Date.now().toString(),
-      };
-      await addCard(newCard);
-      setSelectedCardId(newCard.id);
+      await addCard(cardData);
       setCardModalVisible(false);
     } catch (error) {
       console.error('Error al guardar tarjeta:', error);
-      // Aquí podrías mostrar un mensaje de error al usuario
     }
   };
 
@@ -134,7 +128,7 @@ export default function HomeScreen() {
         visible={transactionModalVisible}
         onClose={handleCloseTransactionModal}
         onSave={handleSaveTransaction}
-        cardId={selectedCardId}
+        accountId={selectedCardId}
         editingTransaction={editingTransaction}
       />
       <AddCardModal

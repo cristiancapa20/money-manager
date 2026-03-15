@@ -2,7 +2,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRef } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
-import type { Transaction } from './add-transaction-modal';
+import type { Transaction } from '@/types/transaction';
 import { BalanceCard } from './balance-card';
 import type { Card } from '@/types/card';
 
@@ -32,18 +32,18 @@ export function SwipeableBalanceCard({
   }
 
   // Filtrar transacciones de la tarjeta seleccionada
-  const cardTransactions = transactions.filter((t) => t.cardId === selectedCard.id);
+  const cardTransactions = transactions.filter((t) => t.accountId === selectedCard.id);
 
   // Calcular totales
   const income = cardTransactions
-    .filter((t) => t.type === 'income')
+    .filter((t) => t.type === 'INCOME')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const expenses = cardTransactions
-    .filter((t) => t.type === 'expense')
+    .filter((t) => t.type === 'EXPENSE')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const balance = selectedCard.initialBalance + income - expenses;
+  const balance = income - expenses;
 
   // Usar PanResponder para detectar swipes solo en la tarjeta
   const panResponder = useRef(

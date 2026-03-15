@@ -107,6 +107,31 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Ajustes',
+          tabBarIcon: ({ focused }) => (
+            <View style={{ alignItems: 'center' }}>
+              {focused && (
+                <View style={{
+                  position: 'absolute',
+                  top: -8,
+                  width: 20,
+                  height: 2,
+                  borderRadius: 1,
+                  backgroundColor: theme.tabIconSelected,
+                }} />
+              )}
+              <Ionicons
+                name={focused ? 'settings' : 'settings-outline'}
+                size={focused ? 24 : 22}
+                color={focused ? theme.tabIconSelected : theme.tabIconDefault}
+              />
+            </View>
+          ),
+        }}
+      />
     </Tabs>
   );
 }

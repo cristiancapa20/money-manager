@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import type { Transaction } from './add-transaction-modal';
+import type { Transaction } from '@/types/transaction';
 
 interface CardCarouselProps {
   cards: Card[];
@@ -25,14 +25,14 @@ export function CardCarousel({
   }
 
   const selectedCard = cards[selectedCardIndex];
-  const cardTransactions = transactions.filter((t) => t.cardId === selectedCard.id);
+  const cardTransactions = transactions.filter((t) => t.accountId === selectedCard.id);
   const income = cardTransactions
-    .filter((t) => t.type === 'income')
+    .filter((t) => t.type === 'INCOME')
     .reduce((sum, t) => sum + t.amount, 0);
   const expenses = cardTransactions
-    .filter((t) => t.type === 'expense')
+    .filter((t) => t.type === 'EXPENSE')
     .reduce((sum, t) => sum + t.amount, 0);
-  const balance = selectedCard.initialBalance + income - expenses;
+  const balance = income - expenses;
 
   const handlePrevious = () => {
     if (selectedCardIndex > 0) {

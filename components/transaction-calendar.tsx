@@ -4,7 +4,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import type { Transaction } from './add-transaction-modal';
+import type { Transaction } from '@/types/transaction';
 
 interface TransactionCalendarProps {
   transactions: Transaction[];

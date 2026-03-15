@@ -195,7 +195,7 @@ export function AddTransactionModal({
                       <Text
                         style={[
                           styles.catText,
-                          { color: cat.color, fontWeight: selected ? '700' : '600' },
+                          { color: scheme === 'dark' ? '#FFFFFF' : '#000000', fontWeight: selected ? '700' : '600' },
                         ]}
                         numberOfLines={1}>
                         {cat.name}

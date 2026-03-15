@@ -122,7 +122,7 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
             <Text style={[styles.itemDesc, { color: theme.text }]} numberOfLines={1}>
               {transaction.description}
             </Text>
-            <Text style={[styles.itemCategory, { color: catColor }]} numberOfLines={1}>
+            <Text style={[styles.itemCategory, { color: scheme === 'dark' ? '#FFFFFF' : '#000000' }]} numberOfLines={1}>
               {catName}
             </Text>
           </View>

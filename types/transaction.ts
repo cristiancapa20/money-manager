@@ -4,7 +4,7 @@ export interface Transaction {
   /** En centavos — dividir entre 100 para mostrar */
   amount: number;
   type: 'INCOME' | 'EXPENSE';
-  categoryId: number;
+  categoryId: string;
   accountId: string;
   userId: string;
   description: string;
@@ -20,7 +20,7 @@ export interface Transaction {
 }
 
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   color: string;
   icon: string;

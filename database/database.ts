@@ -28,7 +28,7 @@ export async function getAllCategories(userId: string): Promise<Category[]> {
     args: [userId],
   });
   return result.rows.map((r) => ({
-    id: Number(r.id),
+    id: String(r.id),
     name: String(r.name),
     color: String(r.color),
     icon: String(r.icon),
@@ -162,7 +162,7 @@ function rowToTransaction(r: Record<string, any>): Transaction {
     id: String(r.id),
     amount: Number(r.amount) / 100, // centavos → pesos
     type: String(r.type) as 'INCOME' | 'EXPENSE',
-    categoryId: Number(r.categoryId),
+    categoryId: String(r.categoryId),
     accountId: String(r.accountId),
     userId: String(r.userId),
     description: String(r.description ?? ''),

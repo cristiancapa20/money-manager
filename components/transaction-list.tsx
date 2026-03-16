@@ -164,7 +164,7 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
 const styles = StyleSheet.create({
   container:       { flex: 1 },
   headerContainer: { paddingHorizontal: 20 },
-  listContent:     { paddingHorizontal: 16, paddingBottom: 120 },
+  listContent:     { paddingHorizontal: 16, paddingBottom: 90 },
 
   sectionHeader: {
     flexDirection: 'row',

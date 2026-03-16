@@ -6,9 +6,13 @@ import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { PlatformPressable } from '@react-navigation/elements';
 import { Alert, StyleSheet, View } from 'react-native';
 
-export function CenterTabButton(props: BottomTabBarButtonProps) {
+interface CenterTabButtonProps extends BottomTabBarButtonProps {
+  barBg?: string;
+}
+
+export function CenterTabButton({ barBg, ...props }: CenterTabButtonProps) {
   const scheme = useColorScheme() ?? 'light';
-  const theme = Colors[scheme];
+  const theme  = Colors[scheme];
   const { selectedCardId, cards, setTransactionModalVisible, setEditingTransaction } = useApp();
 
   const handlePress = () => {
@@ -30,8 +34,10 @@ export function CenterTabButton(props: BottomTabBarButtonProps) {
       style={[styles.button, props.style]}
       onPress={handlePress}
     >
-      <View style={[styles.iconContainer, { backgroundColor: theme.tint }]}>
-        <Ionicons name="add" size={26} color="#FFFFFF" />
+      <View style={[styles.ring, { borderColor: barBg ?? (scheme === 'dark' ? '#111827' : '#ffffff') }]}>
+        <View style={[styles.circle, { backgroundColor: theme.tint }]}>
+          <Ionicons name="add" size={28} color="#ffffff" />
+        </View>
       </View>
     </PlatformPressable>
   );
@@ -40,20 +46,28 @@ export function CenterTabButton(props: BottomTabBarButtonProps) {
 const styles = StyleSheet.create({
   button: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 8,
+    top: -24,
   },
-  iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  ring: {
+    borderRadius: 40,
+    borderWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  circle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#4f46e5',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 10,
   },
 });

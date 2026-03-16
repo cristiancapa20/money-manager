@@ -1,16 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 
 import { CenterTabButton } from '@/components/center-tab-button';
 import { HapticTab } from '@/components/haptic-tab';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Palette } from '@/constants/theme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = Colors[isDark ? 'dark' : 'light'];
+
+  // Light → blanco; Dark → gris muy oscuro
+  const barBg = isDark ? Palette.gray900 : Palette.white;
 
   return (
     <Tabs
@@ -20,30 +23,23 @@ export default function TabLayout() {
         tabBarActiveTintColor: theme.tabIconSelected,
         tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarStyle: {
-          position: 'absolute',
-          bottom: 20,
-          left: 20,
-          right: 20,
-          height: 70,
-          borderRadius: 25,
-          backgroundColor: theme.background,
-          borderTopWidth: 0,
-          paddingBottom: 10,
-          paddingTop: 5,
-          paddingHorizontal: 10,
+          height: 64,
+          backgroundColor: barBg,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          paddingBottom: 0,
+          paddingHorizontal: 8,
+          // Sombra sutil hacia arriba
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.25,
-          shadowRadius: 12,
-          elevation: 10,
-          ...Platform.select({
-            ios:     { borderTopWidth: 0 },
-            android: { borderTopWidth: 0 },
-          }),
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: isDark ? 0.25 : 0.06,
+          shadowRadius: 8,
+          elevation: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
+          marginTop: 2,
         },
         tabBarShowLabel: true,
       }}
@@ -57,16 +53,16 @@ export default function TabLayout() {
               {focused && (
                 <View style={{
                   position: 'absolute',
-                  top: -8,
-                  width: 20,
-                  height: 2,
-                  borderRadius: 1,
+                  top: -10,
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
                   backgroundColor: theme.tabIconSelected,
                 }} />
               )}
               <Ionicons
                 name={focused ? 'wallet' : 'wallet-outline'}
-                size={focused ? 24 : 22}
+                size={23}
                 color={focused ? theme.tabIconSelected : theme.tabIconDefault}
               />
             </View>
@@ -77,7 +73,7 @@ export default function TabLayout() {
         name="add-transaction"
         options={{
           title: '',
-          tabBarButton: (props) => <CenterTabButton {...props} />,
+          tabBarButton: (props) => <CenterTabButton {...props} barBg={barBg} />,
           tabBarIcon: () => null,
           tabBarLabel: '',
         }}
@@ -91,23 +87,23 @@ export default function TabLayout() {
               {focused && (
                 <View style={{
                   position: 'absolute',
-                  top: -8,
-                  width: 20,
-                  height: 2,
-                  borderRadius: 1,
+                  top: -10,
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
                   backgroundColor: theme.tabIconSelected,
                 }} />
               )}
               <Ionicons
                 name={focused ? 'analytics' : 'analytics-outline'}
-                size={focused ? 24 : 22}
+                size={23}
                 color={focused ? theme.tabIconSelected : theme.tabIconDefault}
               />
             </View>
           ),
         }}
       />
-      {/* settings oculto del tab bar — accesible via modal de perfil */}
+      {/* settings oculto del tab bar */}
       <Tabs.Screen
         name="settings"
         options={{ href: null }}

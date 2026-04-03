@@ -27,6 +27,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Actualiza displayName y avatar en Turso (y en caché local) */
   updateProfile: (displayName: string, avatarUri: string | null) => Promise<void>;
@@ -58,6 +59,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     })();
+  }, []);
+
+  const register = useCallback(async (email: string, password: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Verificar si el email ya existe
+    const existing = await turso.execute({
+      sql: `SELECT id FROM "User" WHERE email = ? LIMIT 1`,
+      args: [normalizedEmail],
+    });
+    if (existing.rows.length > 0) throw new Error('Ya existe una cuenta con ese email');
+
+    // Crear usuario
+    const id = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await turso.execute({
+      sql: `INSERT INTO "User" (id, email, "passwordHash") VALUES (?, ?, ?)`,
+      args: [id, normalizedEmail, passwordHash],
+    });
+
+    // Iniciar sesión automáticamente
+    const authUser: AuthUser = {
+      id,
+      email: normalizedEmail,
+      displayName: null,
+      avatarUri: null,
+    };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+    setUser(authUser);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -124,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -16,6 +16,16 @@ import { turso } from './turso';
 export async function initDatabase(): Promise<void> {
   // Verifica conexión con una query simple
   await turso.execute('SELECT 1');
+
+  // Asegurar que la columna initialBalance exista en Account
+  try {
+    await turso.execute(`ALTER TABLE "Account" ADD COLUMN "initialBalance" INTEGER NOT NULL DEFAULT 0`);
+  } catch (err: any) {
+    const msg = String(err?.message ?? '').toLowerCase();
+    if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+      throw err;
+    }
+  }
 }
 
 // ─── CATEGORÍAS ───────────────────────────────────────────────────────────────
@@ -47,25 +57,27 @@ export async function getAllCards(userId: string): Promise<Card[]> {
   return result.rows.map((r) => ({
     id: String(r.id),
     name: String(r.name),
-    type: String(r.type),
+    type: String(r.type) as Card['type'],
     color: String(r.color ?? '#4f46e5'),
     userId: String(r.userId),
-    initialBalance: 0, // Se calcula desde transacciones en el contexto
+    initialBalance: Number(r.initialBalance ?? 0) / 100, // centavos → pesos
   }));
 }
 
-export async function insertCard(card: Omit<Card, 'initialBalance'>): Promise<void> {
+export async function insertCard(card: Omit<Card, 'id'>): Promise<void> {
   const id = `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const initialBalanceCents = Math.round(card.initialBalance * 100);
   await turso.execute({
-    sql: `INSERT INTO "Account" (id, name, type, color, "userId") VALUES (?, ?, ?, ?, ?)`,
-    args: [id, card.name, card.type, card.color, card.userId],
+    sql: `INSERT INTO "Account" (id, name, type, color, "userId", "initialBalance") VALUES (?, ?, ?, ?, ?, ?)`,
+    args: [id, card.name, card.type, card.color, card.userId, initialBalanceCents],
   });
 }
 
 export async function updateCard(card: Card): Promise<void> {
+  const initialBalanceCents = Math.round(card.initialBalance * 100);
   await turso.execute({
-    sql: `UPDATE "Account" SET name = ?, type = ?, color = ? WHERE id = ? AND "userId" = ?`,
-    args: [card.name, card.type, card.color, card.id, card.userId],
+    sql: `UPDATE "Account" SET name = ?, type = ?, color = ?, "initialBalance" = ? WHERE id = ? AND "userId" = ?`,
+    args: [card.name, card.type, card.color, initialBalanceCents, card.id, card.userId],
   });
 }
 

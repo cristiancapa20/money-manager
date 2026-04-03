@@ -21,7 +21,7 @@ interface AppContextType {
   deleteTransaction: (id: string) => Promise<void>;
   refreshTransactions: () => Promise<void>;
   cards: Card[];
-  addCard: (card: Omit<Card, 'id' | 'initialBalance' | 'userId'>) => Promise<void>;
+  addCard: (card: Omit<Card, 'id' | 'userId'>) => Promise<void>;
   updateCard: (card: Card) => Promise<void>;
   deleteCard: (id: string) => Promise<void>;
   refreshCards: () => Promise<void>;
@@ -58,22 +58,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         db.getAllCategories(user.id),
       ]);
 
-      // Calcular balance de cada cuenta desde las transacciones
-      const cardsWithBalance = loadedCards.map((card) => {
-        const cardTxs = loadedTransactions.filter((t) => t.accountId === card.id);
-        const balance = cardTxs.reduce(
-          (sum, t) => (t.type === 'INCOME' ? sum + t.amount : sum - t.amount),
-          0
-        );
-        return { ...card, initialBalance: balance };
-      });
-
-      setCards(cardsWithBalance);
+      setCards(loadedCards);
       setTransactions(loadedTransactions);
       setCategories(loadedCategories);
       setSelectedCardId((prev) => {
-        if (prev && cardsWithBalance.some((c) => c.id === prev)) return prev;
-        return cardsWithBalance.length > 0 ? cardsWithBalance[0].id : null;
+        if (prev && loadedCards.some((c) => c.id === prev)) return prev;
+        return loadedCards.length > 0 ? loadedCards[0].id : null;
       });
     } catch (err) {
       console.error('Error cargando datos:', err);
@@ -92,17 +82,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const loaded = await db.getAllTransactions(user.id);
     setTransactions(loaded);
-    // Recalcular balances
-    setCards((prev) =>
-      prev.map((card) => {
-        const cardTxs = loaded.filter((t) => t.accountId === card.id);
-        const balance = cardTxs.reduce(
-          (sum, t) => (t.type === 'INCOME' ? sum + t.amount : sum - t.amount),
-          0
-        );
-        return { ...card, initialBalance: balance };
-      })
-    );
   };
 
   const addTransaction = async (
@@ -130,19 +109,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshCards = async () => {
     if (!user) return;
     const loaded = await db.getAllCards(user.id);
-    const loadedTxs = transactions;
-    const withBalance = loaded.map((card) => {
-      const cardTxs = loadedTxs.filter((t) => t.accountId === card.id);
-      const balance = cardTxs.reduce(
-        (sum, t) => (t.type === 'INCOME' ? sum + t.amount : sum - t.amount),
-        0
-      );
-      return { ...card, initialBalance: balance };
-    });
-    setCards(withBalance);
+    setCards(loaded);
   };
 
-  const addCard = async (card: Omit<Card, 'id' | 'initialBalance' | 'userId'>) => {
+  const addCard = async (card: Omit<Card, 'id' | 'userId'>) => {
     if (!user) throw new Error('No autenticado');
     await db.insertCard({ ...card, userId: user.id });
     await refreshCards();

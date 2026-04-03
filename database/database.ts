@@ -130,7 +130,19 @@ export async function updateCard(card: Card): Promise<void> {
   });
 }
 
+export async function countTransactionsByAccountId(accountId: string, userId: string): Promise<number> {
+  const result = await turso.execute({
+    sql: `SELECT COUNT(*) AS cnt FROM "Transaction" WHERE "accountId" = ? AND "userId" = ? AND "deletedAt" IS NULL`,
+    args: [accountId, userId],
+  });
+  return Number(result.rows[0].cnt);
+}
+
 export async function deleteCard(id: string, userId: string): Promise<void> {
+  const count = await countTransactionsByAccountId(id, userId);
+  if (count > 0) {
+    throw new Error(`No se puede eliminar la cuenta porque tiene ${count} transacción(es) asociada(s).`);
+  }
   await turso.execute({
     sql: `DELETE FROM "Account" WHERE id = ? AND "userId" = ?`,
     args: [id, userId],

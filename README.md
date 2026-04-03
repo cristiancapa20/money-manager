@@ -82,7 +82,7 @@ EXPO_PUBLIC_TURSO_AUTH_TOKEN=tu-token
 npm install
 ```
 
-### Ejecutar
+### Ejecutar (produccion)
 
 ```bash
 npm start          # Inicia Expo dev server
@@ -92,6 +92,30 @@ npm run ios        # Simulador iOS
 npm run android    # Emulador Android
 npm run web        # Navegador web
 ```
+
+### Entorno de desarrollo local
+
+Para trabajar sin tocar la base de datos de produccion, usa una BDD local con Turso CLI:
+
+```bash
+# 1. Instala Turso CLI (si no lo tienes)
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# 2. Inicia el servidor local (en una terminal aparte)
+turso dev
+
+# 3. Pobla la BDD con tablas y datos de prueba
+npx tsx scripts/seed-dev.ts
+
+# 4. Inicia la app con el entorno de desarrollo
+cp .env.development .env
+npm start
+```
+
+**Usuario de prueba:** `test@test.com` / `test1234`
+
+> Para volver a produccion, restaura el `.env` original con las credenciales de Turso cloud.
+> La BDD local es efimera — se pierde al cerrar `turso dev`. Si quieres persistirla usa `turso dev --db-file local.db`.
 
 ### Otros comandos
 
@@ -104,8 +128,9 @@ npm run reset-project    # Reiniciar proyecto base
 
 - Node.js
 - Expo CLI
+- Turso CLI (para desarrollo local)
 - iOS Simulator / Android Emulator / Expo Go en dispositivo fisico
-- Base de datos en Turso con las tablas configuradas
+- Base de datos en Turso con las tablas configuradas (produccion) o `turso dev` (desarrollo)
 
 ## Arquitectura y convenciones de codigo
 

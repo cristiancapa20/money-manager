@@ -20,8 +20,11 @@ export async function initDatabase(): Promise<void> {
   // Asegurar que la columna initialBalance exista en Account
   try {
     await turso.execute(`ALTER TABLE "Account" ADD COLUMN "initialBalance" INTEGER NOT NULL DEFAULT 0`);
-  } catch {
-    // La columna ya existe — ignorar
+  } catch (err: any) {
+    const msg = String(err?.message ?? '').toLowerCase();
+    if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+      throw err;
+    }
   }
 }
 

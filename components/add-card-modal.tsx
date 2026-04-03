@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Card } from '@/types/card';
-import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_ICONS, type AccountType } from '@/types/card';
+import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_ICONS, type AccountType, LEGACY_TYPE_MAP } from '@/types/card';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
@@ -47,7 +47,7 @@ export function AddCardModal({ visible, onClose, onSave, editingCard }: AddCardM
     if (editingCard) {
       setName(editingCard.name);
       setSelectedColor(editingCard.color);
-      setSelectedType(editingCard.type);
+      setSelectedType(LEGACY_TYPE_MAP[editingCard.type as string] ?? editingCard.type);
       setInitialBalance(editingCard.initialBalance ? String(editingCard.initialBalance) : '');
     } else {
       handleReset();

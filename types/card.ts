@@ -24,3 +24,11 @@ export const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
   CREDIT_CARD: 'card-outline',
   OTHER:       'wallet-outline',
 };
+
+/** Mapeo de tipos legacy a los nuevos para cuentas creadas antes de la migración */
+export const LEGACY_TYPE_MAP: Record<string, AccountType> = {
+  checking: 'BANK',
+  savings:  'BANK',
+  cash:     'CASH',
+  credit:   'CREDIT_CARD',
+};

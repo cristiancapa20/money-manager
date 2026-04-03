@@ -6,17 +6,18 @@ export interface CategoryInfo {
 }
 
 export const categoryMap: Record<string, CategoryInfo> = {
-  'Alimentación': { name: 'Alimentación', icon: 'restaurant-outline', color: '#F59E0B' },
-  'Transporte': { name: 'Transporte', icon: 'car-outline', color: '#3B82F6' },
-  'Entretenimiento': { name: 'Entretenimiento', icon: 'game-controller-outline', color: '#8B5CF6' },
-  'Salud': { name: 'Salud', icon: 'medical-outline', color: '#EF4444' },
-  'Educación': { name: 'Educación', icon: 'school-outline', color: '#10B981' },
-  'Servicios': { name: 'Servicios', icon: 'construct-outline', color: '#6366F1' },
-  'Compras': { name: 'Compras', icon: 'bag-outline', color: '#EC4899' },
-  'Salario': { name: 'Salario', icon: 'cash-outline', color: '#22C55E' },
-  'Freelance': { name: 'Freelance', icon: 'laptop-outline', color: '#06B6D4' },
-  'Inversiones': { name: 'Inversiones', icon: 'trending-up-outline', color: '#14B8A6' },
-  'Otros': { name: 'Otros', icon: 'ellipse-outline', color: '#6B7280' },
+  'Alimentación':    { name: 'Alimentación',    icon: 'restaurant-outline',      color: '#FF6B6B' },
+  'Transporte':      { name: 'Transporte',      icon: 'car-outline',             color: '#4ECDC4' },
+  'Vivienda':        { name: 'Vivienda',        icon: 'home-outline',            color: '#45B7D1' },
+  'Salud':           { name: 'Salud',           icon: 'medical-outline',         color: '#96CEB4' },
+  'Entretenimiento': { name: 'Entretenimiento', icon: 'game-controller-outline', color: '#FFEAA7' },
+  'Educación':       { name: 'Educación',       icon: 'school-outline',          color: '#DDA0DD' },
+  'Ropa':            { name: 'Ropa',            icon: 'shirt-outline',           color: '#F0A500' },
+  'Tecnología':      { name: 'Tecnología',      icon: 'laptop-outline',          color: '#6C5CE7' },
+  'Servicios':       { name: 'Servicios',       icon: 'construct-outline',       color: '#A29BFE' },
+  'Otros':           { name: 'Otros',           icon: 'ellipse-outline',         color: '#B2BEC3' },
+  'Préstamo':        { name: 'Préstamo',        icon: 'cash-outline',            color: '#00B894' },
+  'Deuda':           { name: 'Deuda',           icon: 'trending-down-outline',   color: '#E17055' },
 };
 
 export function getCategoryInfo(categoryName: string): CategoryInfo {

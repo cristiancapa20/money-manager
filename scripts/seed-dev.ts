@@ -121,17 +121,18 @@ async function seed() {
   console.log('📂 Insertando categorías del sistema...');
 
   const categories = [
-    { id: 'cat_sys_alimentacion',    name: 'Alimentación',    icon: 'restaurant-outline',      color: '#F59E0B' },
-    { id: 'cat_sys_transporte',      name: 'Transporte',      icon: 'car-outline',             color: '#3B82F6' },
-    { id: 'cat_sys_entretenimiento', name: 'Entretenimiento', icon: 'game-controller-outline', color: '#8B5CF6' },
-    { id: 'cat_sys_salud',           name: 'Salud',           icon: 'medical-outline',         color: '#EF4444' },
-    { id: 'cat_sys_educacion',       name: 'Educación',       icon: 'school-outline',          color: '#10B981' },
-    { id: 'cat_sys_servicios',       name: 'Servicios',       icon: 'construct-outline',       color: '#6366F1' },
-    { id: 'cat_sys_compras',         name: 'Compras',         icon: 'bag-outline',             color: '#EC4899' },
-    { id: 'cat_sys_salario',         name: 'Salario',         icon: 'cash-outline',            color: '#22C55E' },
-    { id: 'cat_sys_freelance',       name: 'Freelance',       icon: 'laptop-outline',          color: '#06B6D4' },
-    { id: 'cat_sys_inversiones',     name: 'Inversiones',     icon: 'trending-up-outline',     color: '#14B8A6' },
-    { id: 'cat_sys_otros',           name: 'Otros',           icon: 'ellipse-outline',         color: '#6B7280' },
+    { id: 'cat_sys_alimentacion',    name: 'Alimentación',    icon: 'restaurant-outline',      color: '#FF6B6B' },
+    { id: 'cat_sys_transporte',      name: 'Transporte',      icon: 'car-outline',             color: '#4ECDC4' },
+    { id: 'cat_sys_vivienda',        name: 'Vivienda',        icon: 'home-outline',            color: '#45B7D1' },
+    { id: 'cat_sys_salud',           name: 'Salud',           icon: 'medical-outline',         color: '#96CEB4' },
+    { id: 'cat_sys_entretenimiento', name: 'Entretenimiento', icon: 'game-controller-outline', color: '#FFEAA7' },
+    { id: 'cat_sys_educacion',       name: 'Educación',       icon: 'school-outline',          color: '#DDA0DD' },
+    { id: 'cat_sys_ropa',            name: 'Ropa',            icon: 'shirt-outline',           color: '#F0A500' },
+    { id: 'cat_sys_tecnologia',      name: 'Tecnología',      icon: 'laptop-outline',          color: '#6C5CE7' },
+    { id: 'cat_sys_servicios',       name: 'Servicios',       icon: 'construct-outline',       color: '#A29BFE' },
+    { id: 'cat_sys_otros',           name: 'Otros',           icon: 'ellipse-outline',         color: '#B2BEC3' },
+    { id: 'cat_sys_prestamo',        name: 'Préstamo',        icon: 'cash-outline',            color: '#00B894' },
+    { id: 'cat_sys_deuda',           name: 'Deuda',           icon: 'trending-down-outline',   color: '#E17055' },
   ];
 
   for (const cat of categories) {
@@ -179,9 +180,9 @@ async function seed() {
   const now = new Date();
   const transactions = [
     // Ingresos
-    { type: 'INCOME',  amount: 350000, catId: 'cat_sys_salario',    accId: 'acc_dev_checking', desc: 'Salario mensual',       daysAgo: 1 },
-    { type: 'INCOME',  amount: 80000,  catId: 'cat_sys_freelance',  accId: 'acc_dev_checking', desc: 'Proyecto freelance',    daysAgo: 5 },
-    { type: 'INCOME',  amount: 15000,  catId: 'cat_sys_inversiones',accId: 'acc_dev_savings',  desc: 'Rendimiento inversión', daysAgo: 10 },
+    { type: 'INCOME',  amount: 350000, catId: 'cat_sys_prestamo',       accId: 'acc_dev_checking', desc: 'Salario mensual',       daysAgo: 1 },
+    { type: 'INCOME',  amount: 80000,  catId: 'cat_sys_tecnologia',     accId: 'acc_dev_checking', desc: 'Proyecto freelance',    daysAgo: 5 },
+    { type: 'INCOME',  amount: 15000,  catId: 'cat_sys_otros',          accId: 'acc_dev_savings',  desc: 'Rendimiento inversión', daysAgo: 10 },
     // Gastos
     { type: 'EXPENSE', amount: 12500,  catId: 'cat_sys_alimentacion',   accId: 'acc_dev_checking', desc: 'Supermercado',         daysAgo: 0 },
     { type: 'EXPENSE', amount: 4500,   catId: 'cat_sys_transporte',     accId: 'acc_dev_cash',     desc: 'Gasolina',             daysAgo: 1 },
@@ -189,7 +190,7 @@ async function seed() {
     { type: 'EXPENSE', amount: 8000,   catId: 'cat_sys_salud',          accId: 'acc_dev_checking', desc: 'Consulta médica',      daysAgo: 3 },
     { type: 'EXPENSE', amount: 15000,  catId: 'cat_sys_educacion',      accId: 'acc_dev_checking', desc: 'Curso en línea',       daysAgo: 4 },
     { type: 'EXPENSE', amount: 6000,   catId: 'cat_sys_servicios',      accId: 'acc_dev_checking', desc: 'Internet y teléfono',  daysAgo: 7 },
-    { type: 'EXPENSE', amount: 35000,  catId: 'cat_sys_compras',        accId: 'acc_dev_credit',   desc: 'Ropa nueva',           daysAgo: 8 },
+    { type: 'EXPENSE', amount: 35000,  catId: 'cat_sys_ropa',           accId: 'acc_dev_credit',   desc: 'Ropa nueva',           daysAgo: 8 },
     { type: 'EXPENSE', amount: 2000,   catId: 'cat_sys_alimentacion',   accId: 'acc_dev_cash',     desc: 'Café y snacks',        daysAgo: 0 },
     { type: 'EXPENSE', amount: 18000,  catId: 'cat_sys_otros',          accId: 'acc_dev_checking', desc: 'Regalo cumpleaños',    daysAgo: 12 },
     { type: 'EXPENSE', amount: 9500,   catId: 'cat_sys_transporte',     accId: 'acc_dev_checking', desc: 'Uber mensual',         daysAgo: 6 },

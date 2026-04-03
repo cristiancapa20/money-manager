@@ -79,6 +79,23 @@ export async function getAllCategories(userId: string): Promise<Category[]> {
   }));
 }
 
+export async function insertCategory(
+  category: Omit<Category, 'id' | 'isSystem'>,
+): Promise<void> {
+  const id = `cat_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  await turso.execute({
+    sql: `INSERT INTO "Category" (id, name, icon, color, "isSystem", "userId") VALUES (?, ?, ?, ?, 0, ?)`,
+    args: [id, category.name, category.icon, category.color, category.userId],
+  });
+}
+
+export async function deleteCategory(id: string, userId: string): Promise<void> {
+  await turso.execute({
+    sql: `DELETE FROM "Category" WHERE id = ? AND "userId" = ? AND "isSystem" = 0`,
+    args: [id, userId],
+  });
+}
+
 // ─── CUENTAS (Cards) ──────────────────────────────────────────────────────────
 
 export async function getAllCards(userId: string): Promise<Card[]> {

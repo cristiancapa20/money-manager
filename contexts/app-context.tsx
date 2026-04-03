@@ -25,6 +25,9 @@ interface AppContextType {
   updateCard: (card: Card) => Promise<void>;
   deleteCard: (id: string) => Promise<void>;
   refreshCards: () => Promise<void>;
+  addCategory: (cat: Omit<Category, 'id' | 'isSystem' | 'userId'>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  refreshCategories: () => Promise<void>;
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
   editingTransaction: Transaction | null;
@@ -104,6 +107,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshTransactions();
   };
 
+  // ── Categorías ─────────────────────────────────────────────────────────────
+
+  const refreshCategories = async () => {
+    if (!user) return;
+    const loaded = await db.getAllCategories(user.id);
+    setCategories(loaded);
+  };
+
+  const addCategory = async (cat: Omit<Category, 'id' | 'isSystem' | 'userId'>) => {
+    if (!user) throw new Error('No autenticado');
+    await db.insertCategory({ ...cat, userId: user.id });
+    await refreshCategories();
+  };
+
+  const deleteCategory = async (id: string) => {
+    if (!user) throw new Error('No autenticado');
+    await db.deleteCategory(id, user.id);
+    await refreshCategories();
+  };
+
   // ── Cuentas ────────────────────────────────────────────────────────────────
 
   const refreshCards = async () => {
@@ -145,6 +168,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateTransaction,
         deleteTransaction,
         refreshTransactions,
+        addCategory,
+        deleteCategory,
+        refreshCategories,
         cards,
         addCard,
         updateCard,

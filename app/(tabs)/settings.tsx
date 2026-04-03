@@ -55,6 +55,21 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Categorías */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
+          onPress={() => router.push('/(tabs)/categories')}
+          activeOpacity={0.8}>
+          <Ionicons name="pricetags-outline" size={20} color={theme.tint} />
+          <View style={styles.flex1}>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Categorías</Text>
+            <Text style={[styles.cardHint, { color: theme.textSecondary }]}>
+              Gestionar categorías de gastos
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+        </TouchableOpacity>
+
         {/* Turso conectado */}
         <View style={[styles.card, { backgroundColor: theme.tintLight, borderColor: theme.tintBorder }]}>
           <Ionicons name="cloud-done" size={20} color={theme.tint} />

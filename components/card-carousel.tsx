@@ -11,7 +11,7 @@ interface CardCarouselProps {
   selectedCardIndex: number;
   onCardChange: (index: number) => void;
   transactions: Transaction[];
-  onDeleteCard?: (cardId: string) => void;
+  onDeleteCard?: (cardId: string) => Promise<void>;
   onEditCard?: (card: Card) => void;
 }
 
@@ -105,7 +105,7 @@ interface CardItemProps {
   balance: number;
   income: number;
   expenses: number;
-  onDeleteCard?: (cardId: string) => void;
+  onDeleteCard?: (cardId: string) => Promise<void>;
   onEditCard?: (card: Card) => void;
 }
 
@@ -129,7 +129,7 @@ function CardItem({ card, balance, onDeleteCard, onEditCard }: CardItemProps) {
   const handleDeletePress = () => {
     Alert.alert(
       'Eliminar tarjeta',
-      `¿Estás seguro de que deseas eliminar la tarjeta "${card.name}"? Esta acción eliminará la tarjeta y todas sus transacciones. Esta acción no se puede deshacer.`,
+      `¿Estás seguro de que deseas eliminar la tarjeta "${card.name}"? Esta acción no se puede deshacer.`,
       [
         {
           text: 'Cancelar',
@@ -138,9 +138,13 @@ function CardItem({ card, balance, onDeleteCard, onEditCard }: CardItemProps) {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             if (onDeleteCard) {
-              onDeleteCard(card.id);
+              try {
+                await onDeleteCard(card.id);
+              } catch (error: any) {
+                Alert.alert('No se puede eliminar', error.message);
+              }
             }
           },
         },

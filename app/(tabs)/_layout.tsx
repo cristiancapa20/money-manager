@@ -103,9 +103,13 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* settings oculto del tab bar */}
+      {/* settings y categories ocultos del tab bar */}
       <Tabs.Screen
         name="settings"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="categories"
         options={{ href: null }}
       />
     </Tabs>

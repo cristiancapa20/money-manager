@@ -83,7 +83,7 @@ export async function getAllTransactions(userId: string): Promise<Transaction[]>
     sql: `SELECT t.*, c.name AS category, c.color AS "categoryColor", c.icon AS "categoryIcon"
           FROM "Transaction" t
           LEFT JOIN "Category" c ON t."categoryId" = c.id
-          WHERE t."userId" = ?
+          WHERE t."userId" = ? AND t."deletedAt" IS NULL
           ORDER BY t.date DESC`,
     args: [userId],
   });
@@ -98,7 +98,7 @@ export async function getTransactionsByAccountId(
     sql: `SELECT t.*, c.name AS category, c.color AS "categoryColor", c.icon AS "categoryIcon"
           FROM "Transaction" t
           LEFT JOIN "Category" c ON t."categoryId" = c.id
-          WHERE t."accountId" = ? AND t."userId" = ?
+          WHERE t."accountId" = ? AND t."userId" = ? AND t."deletedAt" IS NULL
           ORDER BY t.date DESC`,
     args: [accountId, userId],
   });
@@ -106,7 +106,7 @@ export async function getTransactionsByAccountId(
 }
 
 export async function insertTransaction(
-  tx: Omit<Transaction, 'id' | 'createdAt'>,
+  tx: Omit<Transaction, 'id' | 'createdAt' | 'deletedAt'>,
 ): Promise<void> {
   const id = `tx_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const now = new Date().toISOString();
@@ -149,9 +149,10 @@ export async function updateTransaction(tx: Transaction): Promise<void> {
 }
 
 export async function deleteTransaction(id: string, userId: string): Promise<void> {
+  const now = new Date().toISOString();
   await turso.execute({
-    sql: `DELETE FROM "Transaction" WHERE id = ? AND "userId" = ?`,
-    args: [id, userId],
+    sql: `UPDATE "Transaction" SET "deletedAt" = ? WHERE id = ? AND "userId" = ?`,
+    args: [now, id, userId],
   });
 }
 
@@ -168,6 +169,7 @@ function rowToTransaction(r: Record<string, any>): Transaction {
     description: String(r.description ?? ''),
     date: String(r.date),
     createdAt: String(r.createdAt),
+    deletedAt: r.deletedAt ? String(r.deletedAt) : null,
     category: r.category ? String(r.category) : undefined,
     categoryColor: r.categoryColor ? String(r.categoryColor) : undefined,
     categoryIcon: r.categoryIcon ? String(r.categoryIcon) : undefined,

@@ -183,6 +183,7 @@ export default function HomeScreen() {
         onClose={() => { setCardModalVisible(false); setEditingCard(null); }}
         onSave={handleSaveCard}
         editingCard={editingCard}
+        transactions={transactions}
       />
 
     </ThemedView>

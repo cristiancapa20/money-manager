@@ -4,8 +4,9 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Card } from '@/types/card';
 import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_ICONS, type AccountType, LEGACY_TYPE_MAP } from '@/types/card';
+import type { Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -21,6 +22,7 @@ interface AddCardModalProps {
   onClose: () => void;
   onSave: (card: Omit<Card, 'id' | 'userId'>) => void;
   editingCard?: Card | null;
+  transactions?: Transaction[];
 }
 
 const cardColors = [
@@ -34,21 +36,32 @@ const cardColors = [
 
 const accountTypes: AccountType[] = ['CASH', 'BANK', 'CREDIT_CARD', 'OTHER'];
 
-export function AddCardModal({ visible, onClose, onSave, editingCard }: AddCardModalProps) {
+export function AddCardModal({ visible, onClose, onSave, editingCard, transactions = [] }: AddCardModalProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
 
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(cardColors[0].value);
   const [selectedType, setSelectedType] = useState<AccountType>('BANK');
-  const [initialBalance, setInitialBalance] = useState('');
+  const [balanceInput, setBalanceInput] = useState('');
+
+  // Net amount from transactions for the editing card (income - expenses)
+  const transactionNet = useMemo(() => {
+    if (!editingCard) return 0;
+    const cardTxs = transactions.filter((t) => t.accountId === editingCard.id);
+    const income = cardTxs.filter((t) => t.type === 'INCOME').reduce((sum, t) => sum + t.amount, 0);
+    const expenses = cardTxs.filter((t) => t.type === 'EXPENSE').reduce((sum, t) => sum + t.amount, 0);
+    return income - expenses;
+  }, [editingCard, transactions]);
 
   useEffect(() => {
     if (editingCard) {
       setName(editingCard.name);
       setSelectedColor(editingCard.color);
       setSelectedType(LEGACY_TYPE_MAP[editingCard.type as string] ?? editingCard.type);
-      setInitialBalance(editingCard.initialBalance ? String(editingCard.initialBalance) : '');
+      // Show current balance (initialBalance + transactions) when editing
+      const currentBalance = editingCard.initialBalance + transactionNet;
+      setBalanceInput(currentBalance ? String(currentBalance) : '');
     } else {
       handleReset();
     }
@@ -56,11 +69,14 @@ export function AddCardModal({ visible, onClose, onSave, editingCard }: AddCardM
 
   const handleSave = () => {
     if (!name.trim()) return;
+    const desiredBalance = parseFloat(balanceInput) || 0;
+    // When editing, back-calculate initialBalance so that initialBalance + net = desiredBalance
+    const initialBalance = editingCard ? desiredBalance - transactionNet : desiredBalance;
     onSave({
       name: name.trim(),
       color: selectedColor,
       type: selectedType,
-      initialBalance: parseFloat(initialBalance) || 0,
+      initialBalance,
     });
     handleReset();
   };
@@ -69,7 +85,7 @@ export function AddCardModal({ visible, onClose, onSave, editingCard }: AddCardM
     setName('');
     setSelectedColor(cardColors[0].value);
     setSelectedType('BANK');
-    setInitialBalance('');
+    setBalanceInput('');
   };
 
   const handleClose = () => {
@@ -136,13 +152,15 @@ export function AddCardModal({ visible, onClose, onSave, editingCard }: AddCardM
               </View>
             </View>
 
-            {/* Balance inicial */}
+            {/* Balance */}
             <View style={styles.section}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Balance inicial</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                {isEditing ? 'Balance actual' : 'Balance inicial'}
+              </Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }]}
-                value={initialBalance}
-                onChangeText={setInitialBalance}
+                value={balanceInput}
+                onChangeText={setBalanceInput}
                 placeholder="0.00"
                 placeholderTextColor={theme.textMuted}
                 keyboardType="decimal-pad"

@@ -58,7 +58,7 @@ export default function HomeScreen() {
     setTransactionModalVisible(true);
   };
 
-  const handleSaveTransaction = async (tx: Omit<Transaction, 'id' | 'createdAt' | 'userId'>) => {
+  const handleSaveTransaction = async (tx: Omit<Transaction, 'id' | 'createdAt' | 'userId' | 'deletedAt'>) => {
     try {
       if (editingTransaction?.id) {
         await updateTransaction({ ...editingTransaction, ...tx });

@@ -11,6 +11,8 @@ export interface Transaction {
   /** ISO date string  e.g. "2026-03-15T00:00:00.000Z" */
   date: string;
   createdAt: string;
+  /** ISO date string cuando se marcó como eliminada (soft delete), null si activa */
+  deletedAt: string | null;
   /** Nombre de la categoría — join al leer, no columna real */
   category?: string;
   /** Color de la categoría — join al leer */

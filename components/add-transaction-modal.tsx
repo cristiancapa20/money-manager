@@ -23,7 +23,7 @@ export type TransactionType = 'INCOME' | 'EXPENSE';
 interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (tx: Omit<Transaction, 'id' | 'createdAt' | 'userId'>) => void;
+  onSave: (tx: Omit<Transaction, 'id' | 'createdAt' | 'userId' | 'deletedAt'>) => void;
   accountId: string | null;
   editingTransaction?: Transaction | null;
 }
@@ -71,7 +71,7 @@ export function AddTransactionModal({
     if (!amount.trim() || categoryId === null || !accountId) return;
 
     const now = new Date().toISOString();
-    const tx: Omit<Transaction, 'id' | 'createdAt' | 'userId'> = {
+    const tx: Omit<Transaction, 'id' | 'createdAt' | 'userId' | 'deletedAt'> = {
       amount: parseFloat(amount) || 0,
       type,
       categoryId,

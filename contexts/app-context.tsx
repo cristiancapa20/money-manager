@@ -16,7 +16,7 @@ interface AppContextType {
   transactions: Transaction[];
   categories: Category[];
   isLoading: boolean;
-  addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
+  addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt' | 'userId' | 'deletedAt'>) => Promise<void>;
   updateTransaction: (tx: Transaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   refreshTransactions: () => Promise<void>;
@@ -106,7 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addTransaction = async (
-    tx: Omit<Transaction, 'id' | 'createdAt' | 'userId'>
+    tx: Omit<Transaction, 'id' | 'createdAt' | 'userId' | 'deletedAt'>
   ) => {
     if (!user) throw new Error('No autenticado');
     await db.insertTransaction({ ...tx, userId: user.id });

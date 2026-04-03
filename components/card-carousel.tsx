@@ -1,4 +1,5 @@
 import type { Card } from '@/types/card';
+import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_ICONS } from '@/types/card';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
@@ -11,6 +12,7 @@ interface CardCarouselProps {
   onCardChange: (index: number) => void;
   transactions: Transaction[];
   onDeleteCard?: (cardId: string) => void;
+  onEditCard?: (card: Card) => void;
 }
 
 export function CardCarousel({
@@ -19,6 +21,7 @@ export function CardCarousel({
   onCardChange,
   transactions,
   onDeleteCard,
+  onEditCard,
 }: CardCarouselProps) {
   if (cards.length === 0) {
     return null;
@@ -32,7 +35,7 @@ export function CardCarousel({
   const expenses = cardTransactions
     .filter((t) => t.type === 'EXPENSE')
     .reduce((sum, t) => sum + t.amount, 0);
-  const balance = income - expenses;
+  const balance = selectedCard.initialBalance + income - expenses;
 
   const handlePrevious = () => {
     if (selectedCardIndex > 0) {
@@ -54,6 +57,7 @@ export function CardCarousel({
         income={income}
         expenses={expenses}
         onDeleteCard={onDeleteCard}
+        onEditCard={onEditCard}
       />
       {cards.length > 1 && (
         <View style={styles.navigationContainer}>
@@ -102,9 +106,10 @@ interface CardItemProps {
   income: number;
   expenses: number;
   onDeleteCard?: (cardId: string) => void;
+  onEditCard?: (card: Card) => void;
 }
 
-function CardItem({ card, balance, onDeleteCard }: CardItemProps) {
+function CardItem({ card, balance, onDeleteCard, onEditCard }: CardItemProps) {
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
   const formatCurrency = (amount: number) => {
@@ -159,25 +164,35 @@ function CardItem({ card, balance, onDeleteCard }: CardItemProps) {
 
         {/* Content */}
         <View style={styles.cardContent}>
-          {/* Top section with bank icon and delete button */}
+          {/* Top section with account type icon and action buttons */}
           <View style={styles.cardTop}>
             <View style={styles.bankSection}>
               <View style={styles.bankIconContainer}>
-                <Ionicons name="business-outline" size={20} color="#FFFFFF" />
+                <Ionicons name={(ACCOUNT_TYPE_ICONS[card.type] || 'wallet-outline') as any} size={20} color="#FFFFFF" />
               </View>
               <View>
-                <Text style={styles.bankLabel}>Banco</Text>
+                <Text style={styles.bankLabel}>{ACCOUNT_TYPE_LABELS[card.type] || card.type}</Text>
                 <Text style={styles.bankName}>{card.name}</Text>
               </View>
             </View>
-            {onDeleteCard && (
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={handleDeletePress}
-                activeOpacity={0.7}>
-                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-              </TouchableOpacity>
-            )}
+            <View style={styles.cardActions}>
+              {onEditCard && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => onEditCard(card)}
+                  activeOpacity={0.7}>
+                  <Ionicons name="pencil-outline" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+              {onDeleteCard && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleDeletePress}
+                  activeOpacity={0.7}>
+                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Balance section */}
@@ -294,7 +309,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  deleteButton: {
+  cardActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
     width: 32,
     height: 32,
     borderRadius: 16,

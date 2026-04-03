@@ -52,11 +52,12 @@ async function seed() {
   // ─── Account ─────────────────────────────────────────────────────────
   await client.execute(`
     CREATE TABLE IF NOT EXISTS "Account" (
-      "id"     TEXT PRIMARY KEY,
-      "name"   TEXT NOT NULL,
-      "type"   TEXT NOT NULL DEFAULT 'checking',
-      "color"  TEXT NOT NULL DEFAULT '#4f46e5',
-      "userId" TEXT NOT NULL,
+      "id"             TEXT PRIMARY KEY,
+      "name"           TEXT NOT NULL,
+      "type"           TEXT NOT NULL DEFAULT 'BANK',
+      "color"          TEXT NOT NULL DEFAULT '#4f46e5',
+      "initialBalance" INTEGER NOT NULL DEFAULT 0,
+      "userId"         TEXT NOT NULL,
       FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE
     )
   `);
@@ -158,16 +159,16 @@ async function seed() {
   console.log('💳 Creando cuentas...');
 
   const accounts = [
-    { id: 'acc_dev_checking', name: 'Cuenta Principal', type: 'checking', color: '#4f46e5' },
-    { id: 'acc_dev_savings',  name: 'Ahorros',          type: 'savings',  color: '#10B981' },
-    { id: 'acc_dev_cash',     name: 'Efectivo',         type: 'cash',     color: '#F59E0B' },
-    { id: 'acc_dev_credit',   name: 'Tarjeta Crédito',  type: 'credit',   color: '#EF4444' },
+    { id: 'acc_dev_checking', name: 'Cuenta Principal', type: 'BANK',        color: '#4f46e5', initialBalance: 500000 },
+    { id: 'acc_dev_savings',  name: 'Ahorros',          type: 'BANK',        color: '#10B981', initialBalance: 1000000 },
+    { id: 'acc_dev_cash',     name: 'Efectivo',         type: 'CASH',        color: '#F59E0B', initialBalance: 50000 },
+    { id: 'acc_dev_credit',   name: 'Tarjeta Crédito',  type: 'CREDIT_CARD', color: '#EF4444', initialBalance: 0 },
   ];
 
   for (const acc of accounts) {
     await client.execute({
-      sql: `INSERT OR IGNORE INTO "Account" (id, name, type, color, "userId") VALUES (?, ?, ?, ?, ?)`,
-      args: [acc.id, acc.name, acc.type, acc.color, userId],
+      sql: `INSERT OR IGNORE INTO "Account" (id, name, type, color, "initialBalance", "userId") VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [acc.id, acc.name, acc.type, acc.color, acc.initialBalance, userId],
     });
   }
   console.log(`✅ ${accounts.length} cuentas creadas`);

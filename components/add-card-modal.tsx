@@ -3,9 +3,9 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Card } from '@/types/card';
-import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/types/card';
+import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_ICONS, type AccountType } from '@/types/card';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -19,7 +19,8 @@ import {
 interface AddCardModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (card: Omit<Card, 'id' | 'initialBalance' | 'userId'>) => void;
+  onSave: (card: Omit<Card, 'id' | 'userId'>) => void;
+  editingCard?: Card | null;
 }
 
 const cardColors = [
@@ -31,33 +32,44 @@ const cardColors = [
   { name: 'Rosa',    value: '#DB2777' },
 ];
 
-const accountTypes: AccountType[] = ['checking', 'savings', 'cash', 'credit'];
+const accountTypes: AccountType[] = ['CASH', 'BANK', 'CREDIT_CARD', 'OTHER'];
 
-const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
-  checking: 'card-outline',
-  savings:  'wallet-outline',
-  cash:     'cash-outline',
-  credit:   'receipt-outline',
-};
-
-export function AddCardModal({ visible, onClose, onSave }: AddCardModalProps) {
+export function AddCardModal({ visible, onClose, onSave, editingCard }: AddCardModalProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
 
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(cardColors[0].value);
-  const [selectedType, setSelectedType] = useState<AccountType>('checking');
+  const [selectedType, setSelectedType] = useState<AccountType>('BANK');
+  const [initialBalance, setInitialBalance] = useState('');
+
+  useEffect(() => {
+    if (editingCard) {
+      setName(editingCard.name);
+      setSelectedColor(editingCard.color);
+      setSelectedType(editingCard.type);
+      setInitialBalance(editingCard.initialBalance ? String(editingCard.initialBalance) : '');
+    } else {
+      handleReset();
+    }
+  }, [editingCard, visible]);
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave({ name: name.trim(), color: selectedColor, type: selectedType });
+    onSave({
+      name: name.trim(),
+      color: selectedColor,
+      type: selectedType,
+      initialBalance: parseFloat(initialBalance) || 0,
+    });
     handleReset();
   };
 
   const handleReset = () => {
     setName('');
     setSelectedColor(cardColors[0].value);
-    setSelectedType('checking');
+    setSelectedType('BANK');
+    setInitialBalance('');
   };
 
   const handleClose = () => {
@@ -66,6 +78,7 @@ export function AddCardModal({ visible, onClose, onSave }: AddCardModalProps) {
   };
 
   const isValid = name.trim();
+  const isEditing = !!editingCard;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
@@ -73,7 +86,7 @@ export function AddCardModal({ visible, onClose, onSave }: AddCardModalProps) {
         <ThemedView style={styles.sheet}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
-            <ThemedText type="title">Nueva Cuenta</ThemedText>
+            <ThemedText type="title">{isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'}</ThemedText>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
@@ -121,6 +134,19 @@ export function AddCardModal({ visible, onClose, onSave }: AddCardModalProps) {
                   );
                 })}
               </View>
+            </View>
+
+            {/* Balance inicial */}
+            <View style={styles.section}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Balance inicial</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }]}
+                value={initialBalance}
+                onChangeText={setInitialBalance}
+                placeholder="0.00"
+                placeholderTextColor={theme.textMuted}
+                keyboardType="decimal-pad"
+              />
             </View>
 
             {/* Color */}

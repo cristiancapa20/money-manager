@@ -24,6 +24,7 @@ export default function HomeScreen() {
     selectedCardId,
     setSelectedCardId,
     addCard,
+    updateCard,
     deleteCard,
     setEditingTransaction,
     editingTransaction,
@@ -40,6 +41,7 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const [cardModalVisible, setCardModalVisible] = useState(false);
+  const [editingCard, setEditingCard] = useState<Card | null>(null);
 
   const selectedCardIndex = useMemo(() => {
     if (!selectedCardId || cards.length === 0) return 0;
@@ -72,13 +74,23 @@ export default function HomeScreen() {
     }
   };
 
-  const handleSaveCard = async (cardData: Omit<Card, 'id' | 'initialBalance' | 'userId'>) => {
+  const handleSaveCard = async (cardData: Omit<Card, 'id' | 'userId'>) => {
     try {
-      await addCard(cardData);
+      if (editingCard) {
+        await updateCard({ ...editingCard, ...cardData });
+      } else {
+        await addCard(cardData);
+      }
       setCardModalVisible(false);
+      setEditingCard(null);
     } catch (error) {
       console.error('Error al guardar tarjeta:', error);
     }
+  };
+
+  const handleEditCard = (card: Card) => {
+    setEditingCard(card);
+    setCardModalVisible(true);
   };
 
   // Iniciales para el avatar de texto
@@ -145,6 +157,7 @@ export default function HomeScreen() {
               }}
               transactions={transactions}
               onDeleteCard={deleteCard}
+              onEditCard={handleEditCard}
             />
           ) : null
         }
@@ -161,8 +174,9 @@ export default function HomeScreen() {
 
       <AddCardModal
         visible={cardModalVisible}
-        onClose={() => setCardModalVisible(false)}
+        onClose={() => { setCardModalVisible(false); setEditingCard(null); }}
         onSave={handleSaveCard}
+        editingCard={editingCard}
       />
 
     </ThemedView>

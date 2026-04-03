@@ -37,12 +37,13 @@ export function AddTransactionModal({
 }: AddTransactionModalProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const { categories } = useApp();
+  const { categories, getAccountBalance } = useApp();
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [balanceError, setBalanceError] = useState('');
 
   useEffect(() => {
     if (editingTransaction) {
@@ -60,6 +61,7 @@ export function AddTransactionModal({
     setAmount('');
     setType('EXPENSE');
     setCategoryId(null);
+    setBalanceError('');
   };
 
   const handleClose = () => {
@@ -70,12 +72,27 @@ export function AddTransactionModal({
   const handleSave = () => {
     if (!amount.trim() || categoryId === null || !accountId) return;
 
+    const parsedAmount = parseFloat(amount) || 0;
+    const targetAccountId = editingTransaction?.accountId ?? accountId;
+
+    if (type === 'EXPENSE') {
+      const balance = getAccountBalance(targetAccountId);
+      const available = editingTransaction?.type === 'EXPENSE'
+        ? balance + editingTransaction.amount
+        : balance;
+      if (parsedAmount > available) {
+        setBalanceError(`Saldo insuficiente. Balance disponible: $${available.toFixed(2)}`);
+        return;
+      }
+    }
+    setBalanceError('');
+
     const now = new Date().toISOString();
     const tx: Omit<Transaction, 'id' | 'createdAt' | 'userId' | 'deletedAt'> = {
-      amount: parseFloat(amount) || 0,
+      amount: parsedAmount,
       type,
       categoryId,
-      accountId: editingTransaction?.accountId ?? accountId,
+      accountId: targetAccountId,
       description: description.trim(),
       date: editingTransaction?.date ?? now,
     };
@@ -118,7 +135,7 @@ export function AddTransactionModal({
                       backgroundColor: type === 'INCOME' ? theme.income : theme.card,
                     },
                   ]}
-                  onPress={() => setType('INCOME')}>
+                  onPress={() => { setType('INCOME'); setBalanceError(''); }}>
                   <Ionicons name="arrow-up" size={18} color={type === 'INCOME' ? '#fff' : theme.income} />
                   <Text style={[styles.typeBtnText, { color: type === 'INCOME' ? '#fff' : theme.textSecondary }]}>
                     Ingreso
@@ -147,11 +164,12 @@ export function AddTransactionModal({
               <TextInput
                 style={inputStyle}
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(v) => { setAmount(v); setBalanceError(''); }}
                 placeholder="0.00"
                 placeholderTextColor={theme.textMuted}
                 keyboardType="decimal-pad"
               />
+              {balanceError ? <Text style={styles.errorText}>{balanceError}</Text> : null}
             </View>
 
             {/* Descripción */}
@@ -242,6 +260,7 @@ const styles = StyleSheet.create({
   typeBtnText: { fontSize: 15, fontWeight: '600' },
   input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15 },
   textArea: { height: 72, textAlignVertical: 'top' },
+  errorText: { color: '#EF4444', fontSize: 13, marginTop: 6 },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
   catBtn: { width: '30%', minWidth: 88, alignItems: 'center', padding: 10, borderRadius: 14, borderWidth: 1.5 },
   catIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },

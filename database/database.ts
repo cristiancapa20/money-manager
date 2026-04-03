@@ -149,6 +149,25 @@ export async function deleteCard(id: string, userId: string): Promise<void> {
   });
 }
 
+// ─── BALANCE ─────────────────────────────────────────────────────────────────
+
+export async function getAccountBalance(accountId: string, userId: string): Promise<number> {
+  const result = await turso.execute({
+    sql: `SELECT
+            COALESCE(a."initialBalance", 0)
+            + COALESCE(SUM(CASE WHEN t.type = 'INCOME' THEN t.amount ELSE 0 END), 0)
+            - COALESCE(SUM(CASE WHEN t.type = 'EXPENSE' THEN t.amount ELSE 0 END), 0)
+            AS balance
+          FROM "Account" a
+          LEFT JOIN "Transaction" t
+            ON t."accountId" = a.id AND t."userId" = a."userId" AND t."deletedAt" IS NULL
+          WHERE a.id = ? AND a."userId" = ?
+          GROUP BY a.id`,
+    args: [accountId, userId],
+  });
+  return Number(result.rows[0]?.balance ?? 0) / 100; // centavos → pesos
+}
+
 // ─── TRANSACCIONES ────────────────────────────────────────────────────────────
 
 export async function getAllTransactions(userId: string): Promise<Transaction[]> {
@@ -181,6 +200,13 @@ export async function getTransactionsByAccountId(
 export async function insertTransaction(
   tx: Omit<Transaction, 'id' | 'createdAt' | 'deletedAt'>,
 ): Promise<void> {
+  if (tx.type === 'EXPENSE') {
+    const balance = await getAccountBalance(tx.accountId, tx.userId);
+    if (tx.amount > balance) {
+      throw new Error(`Saldo insuficiente. Balance disponible: $${balance.toFixed(2)}`);
+    }
+  }
+
   const id = `tx_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const now = new Date().toISOString();
   const amountCents = Math.round(tx.amount * 100);

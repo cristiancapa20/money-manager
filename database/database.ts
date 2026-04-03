@@ -30,7 +30,39 @@ export async function initDatabase(): Promise<void> {
 
 // ─── CATEGORÍAS ───────────────────────────────────────────────────────────────
 
+const SYSTEM_CATEGORIES = [
+  { id: 'cat_sys_alimentacion',    name: 'Alimentación',    icon: 'restaurant-outline',        color: '#FF6B6B' },
+  { id: 'cat_sys_transporte',      name: 'Transporte',      icon: 'car-outline',               color: '#4ECDC4' },
+  { id: 'cat_sys_vivienda',        name: 'Vivienda',        icon: 'home-outline',              color: '#45B7D1' },
+  { id: 'cat_sys_salud',           name: 'Salud',           icon: 'medical-outline',           color: '#96CEB4' },
+  { id: 'cat_sys_entretenimiento', name: 'Entretenimiento', icon: 'game-controller-outline',   color: '#FFEAA7' },
+  { id: 'cat_sys_educacion',       name: 'Educación',       icon: 'school-outline',            color: '#DDA0DD' },
+  { id: 'cat_sys_ropa',            name: 'Ropa',            icon: 'shirt-outline',             color: '#F0A500' },
+  { id: 'cat_sys_tecnologia',      name: 'Tecnología',      icon: 'laptop-outline',            color: '#6C5CE7' },
+  { id: 'cat_sys_servicios',       name: 'Servicios',       icon: 'construct-outline',         color: '#A29BFE' },
+  { id: 'cat_sys_otros',           name: 'Otros',           icon: 'ellipse-outline',           color: '#B2BEC3' },
+  { id: 'cat_sys_prestamo',        name: 'Préstamo',        icon: 'cash-outline',              color: '#00B894' },
+  { id: 'cat_sys_deuda',           name: 'Deuda',           icon: 'trending-down-outline',     color: '#E17055' },
+];
+
+async function seedSystemCategories(): Promise<void> {
+  const result = await turso.execute(
+    `SELECT COUNT(*) AS count FROM "Category" WHERE "isSystem" = 1`
+  );
+  const count = Number(result.rows[0]?.count ?? 0);
+  if (count > 0) return;
+
+  for (const cat of SYSTEM_CATEGORIES) {
+    await turso.execute({
+      sql: `INSERT OR IGNORE INTO "Category" (id, name, icon, color, "isSystem", "userId") VALUES (?, ?, ?, ?, 1, NULL)`,
+      args: [cat.id, cat.name, cat.icon, cat.color],
+    });
+  }
+}
+
 export async function getAllCategories(userId: string): Promise<Category[]> {
+  await seedSystemCategories();
+
   const result = await turso.execute({
     sql: `SELECT * FROM "Category"
           WHERE "isSystem" = 1 OR "userId" = ?

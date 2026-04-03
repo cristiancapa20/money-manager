@@ -6,7 +6,7 @@ import type { Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface AddTransactionFormProps {
   onSave?: () => void;
@@ -17,18 +17,20 @@ export function AddTransactionForm({ onSave, editingTransaction }: AddTransactio
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
   const router = useRouter();
-  const { selectedCardId, categories, addTransaction, updateTransaction } = useApp();
+  const { selectedCardId, categories, addTransaction, updateTransaction, getAccountBalance } = useApp();
 
   const [description, setDescription] = useState('');
   const [amount, setAmount]           = useState('');
   const [type, setType]               = useState<'INCOME' | 'EXPENSE'>('EXPENSE');
   const [categoryId, setCategoryId]   = useState<number | null>(null);
+  const [balanceError, setBalanceError] = useState('');
 
   const handleReset = useCallback(() => {
     setDescription('');
     setAmount('');
     setType('EXPENSE');
     setCategoryId(null);
+    setBalanceError('');
   }, []);
 
   useEffect(() => {
@@ -42,28 +44,46 @@ export function AddTransactionForm({ onSave, editingTransaction }: AddTransactio
     }
   }, [editingTransaction, handleReset]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!amount.trim() || categoryId === null || !selectedCardId) return;
+
+    const parsedAmount = parseFloat(amount) || 0;
+    const accountId = editingTransaction?.accountId ?? selectedCardId;
+
+    if (type === 'EXPENSE') {
+      const balance = getAccountBalance(accountId);
+      const available = editingTransaction?.type === 'EXPENSE'
+        ? balance + editingTransaction.amount
+        : balance;
+      if (parsedAmount > available) {
+        setBalanceError(`Saldo insuficiente. Balance disponible: $${available.toFixed(2)}`);
+        return;
+      }
+    }
+    setBalanceError('');
 
     const now = new Date().toISOString();
     const base = {
-      amount:      parseFloat(amount) || 0,
+      amount:      parsedAmount,
       type,
       categoryId,
-      accountId:   editingTransaction?.accountId ?? selectedCardId,
+      accountId,
       description: description.trim(),
       date:        editingTransaction?.date ?? now,
     };
 
-    if (editingTransaction?.id) {
-      updateTransaction({ ...editingTransaction, ...base });
-    } else {
-      addTransaction(base);
+    try {
+      if (editingTransaction?.id) {
+        await updateTransaction({ ...editingTransaction, ...base });
+      } else {
+        await addTransaction(base);
+      }
+      handleReset();
+      if (onSave) onSave();
+      router.back();
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'No se pudo guardar la transacción');
     }
-
-    handleReset();
-    if (onSave) onSave();
-    router.back();
   };
 
   const isValid = amount.trim() && categoryId !== null && selectedCardId;
@@ -82,7 +102,7 @@ export function AddTransactionForm({ onSave, editingTransaction }: AddTransactio
           <View style={styles.typeContainer}>
             <TouchableOpacity
               style={[styles.typeButton, { borderColor: type === 'INCOME' ? theme.income : theme.border, backgroundColor: type === 'INCOME' ? theme.income : theme.card }]}
-              onPress={() => setType('INCOME')}>
+              onPress={() => { setType('INCOME'); setBalanceError(''); }}>
               <Ionicons name="arrow-up" size={18} color={type === 'INCOME' ? '#fff' : theme.income} />
               <Text style={[styles.typeButtonText, { color: type === 'INCOME' ? '#fff' : theme.textSecondary }]}>Ingreso</Text>
             </TouchableOpacity>
@@ -98,7 +118,8 @@ export function AddTransactionForm({ onSave, editingTransaction }: AddTransactio
         {/* Monto */}
         <View style={styles.section}>
           <ThemedText style={[styles.label, { color: theme.textSecondary }]}>Monto</ThemedText>
-          <TextInput style={inputStyle} value={amount} onChangeText={setAmount} placeholder="0.00" placeholderTextColor={theme.textMuted} keyboardType="decimal-pad" />
+          <TextInput style={inputStyle} value={amount} onChangeText={(v) => { setAmount(v); setBalanceError(''); }} placeholder="0.00" placeholderTextColor={theme.textMuted} keyboardType="decimal-pad" />
+          {balanceError ? <Text style={styles.errorText}>{balanceError}</Text> : null}
         </View>
 
         {/* Descripción */}
@@ -153,6 +174,7 @@ const styles = StyleSheet.create({
   typeButtonText: { fontSize: 15, fontWeight: '600' },
   input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15 },
   textArea: { height: 80, textAlignVertical: 'top' },
+  errorText: { color: '#EF4444', fontSize: 13, marginTop: 6 },
   categoriesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
   categoryButton: { width: '30%', minWidth: 88, alignItems: 'center', padding: 10, borderRadius: 14, borderWidth: 1.5 },
   categoryIconContainer: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },

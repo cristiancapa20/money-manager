@@ -20,6 +20,7 @@ interface AppContextType {
   updateTransaction: (tx: Transaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   refreshTransactions: () => Promise<void>;
+  getAccountBalance: (accountId: string) => number;
   cards: Card[];
   addCard: (card: Omit<Card, 'id' | 'userId'>) => Promise<void>;
   updateCard: (card: Card) => Promise<void>;
@@ -78,6 +79,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // ── Balance ────────────────────────────────────────────────────────────────
+
+  const getAccountBalance = useCallback(
+    (accountId: string): number => {
+      const card = cards.find((c) => c.id === accountId);
+      if (!card) return 0;
+      const cardTxs = transactions.filter((t) => t.accountId === accountId);
+      const income = cardTxs.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
+      const expenses = cardTxs.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
+      return card.initialBalance + income - expenses;
+    },
+    [cards, transactions],
+  );
 
   // ── Transacciones ──────────────────────────────────────────────────────────
 
@@ -168,6 +183,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateTransaction,
         deleteTransaction,
         refreshTransactions,
+        getAccountBalance,
         addCategory,
         deleteCategory,
         refreshCategories,

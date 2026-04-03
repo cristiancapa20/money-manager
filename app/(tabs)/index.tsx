@@ -15,7 +15,7 @@ import { ThemeSwitch } from '@/components/theme-switch';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   const {
@@ -69,8 +69,8 @@ export default function HomeScreen() {
       }
       setTransactionModalVisible(false);
       setEditingTransaction(null);
-    } catch (error) {
-      console.error('Error al guardar transacción:', error);
+    } catch (error: any) {
+      Alert.alert('Error', error.message ?? 'No se pudo guardar la transacción');
     }
   };
 

@@ -16,30 +16,46 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const { login } = useAuth();
+  const { register } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError('Ingresa tu email y contraseña');
+  const handleRegister = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password || !confirmPassword) {
+      setError('Completa todos los campos');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Ingresa un email válido');
+      return;
+    }
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
       return;
     }
     try {
       setLoading(true);
       setError(null);
-      await login(email.trim(), password);
+      await register(trimmedEmail, password);
       router.replace('/(tabs)');
     } catch (e: any) {
-      setError(e.message ?? 'Error al iniciar sesión');
+      setError(e.message ?? 'Error al crear la cuenta');
     } finally {
       setLoading(false);
     }
@@ -58,7 +74,7 @@ export default function LoginScreen() {
             </View>
             <Text style={[styles.appName, { color: theme.text }]}>Costos</Text>
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              Inicia sesión con tu cuenta
+              Crea tu cuenta
             </Text>
           </View>
 
@@ -91,7 +107,7 @@ export default function LoginScreen() {
                   style={[styles.input, { color: theme.text }]}
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="••••••••"
+                  placeholder="Mínimo 8 caracteres"
                   placeholderTextColor={theme.textMuted}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
@@ -99,6 +115,30 @@ export default function LoginScreen() {
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={18}
+                    color={theme.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Confirmar contraseña */}
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Confirmar contraseña</Text>
+              <View style={[styles.inputRow, { backgroundColor: theme.input, borderColor: theme.inputBorder }]}>
+                <Ionicons name="lock-closed-outline" size={18} color={theme.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Repite tu contraseña"
+                  placeholderTextColor={theme.textMuted}
+                  secureTextEntry={!showConfirm}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={styles.eyeButton}>
+                  <Ionicons
+                    name={showConfirm ? 'eye-off-outline' : 'eye-outline'}
                     size={18}
                     color={theme.textMuted}
                   />
@@ -116,25 +156,25 @@ export default function LoginScreen() {
 
             {/* Botón */}
             <TouchableOpacity
-              style={[styles.loginButton, { backgroundColor: theme.tint }]}
-              onPress={handleLogin}
+              style={[styles.registerButton, { backgroundColor: theme.tint }]}
+              onPress={handleRegister}
               disabled={loading}
               activeOpacity={0.85}>
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+                <Text style={styles.registerButtonText}>Crear cuenta</Text>
               )}
             </TouchableOpacity>
           </View>
 
-          {/* Link a registro */}
+          {/* Link a login */}
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-              ¿No tienes cuenta?{' '}
+              ¿Ya tienes cuenta?{' '}
             </Text>
-            <TouchableOpacity onPress={() => router.replace('/(auth)/register')}>
-              <Text style={[styles.footerLink, { color: theme.tint }]}>Crear cuenta</Text>
+            <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
+              <Text style={[styles.footerLink, { color: theme.tint }]}>Inicia sesión</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -222,7 +262,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
-  loginButton: {
+  registerButton: {
     height: 50,
     borderRadius: 12,
     justifyContent: 'center',
@@ -234,7 +274,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  loginButtonText: {
+  registerButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',

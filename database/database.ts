@@ -359,7 +359,22 @@ export async function updateLoan(
 }
 
 export async function deleteLoan(id: string, userId: string): Promise<void> {
-  // Delete associated payments first
+  const now = new Date().toISOString();
+
+  // Soft-delete linked balance transactions (txlp_* IDs)
+  const payments = await turso.execute({
+    sql: `SELECT id FROM "LoanPayment" WHERE "loanId" = ?`,
+    args: [id],
+  });
+  for (const row of payments.rows) {
+    const txId = String(row.id).replace(/^lp_/, 'txlp_');
+    await turso.execute({
+      sql: `UPDATE "Transaction" SET "deletedAt" = ? WHERE id = ? AND "userId" = ?`,
+      args: [now, txId, userId],
+    });
+  }
+
+  // Delete associated payments
   await turso.execute({
     sql: `DELETE FROM "LoanPayment" WHERE "loanId" = ?`,
     args: [id],

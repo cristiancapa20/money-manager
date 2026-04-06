@@ -208,7 +208,7 @@ export function AddTransactionModal({
                           styles.catIcon,
                           { backgroundColor: `${cat.color}${selected ? '30' : '18'}` },
                         ]}>
-                        <Text style={styles.catEmoji}>{cat.icon}</Text>
+                        <Ionicons name={cat.icon as any} size={22} color={cat.color} />
                       </View>
                       <Text
                         style={[
@@ -264,7 +264,6 @@ const styles = StyleSheet.create({
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
   catBtn: { width: '30%', minWidth: 88, alignItems: 'center', padding: 10, borderRadius: 14, borderWidth: 1.5 },
   catIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
-  catEmoji: { fontSize: 22, lineHeight: 28 },
   catText: { fontSize: 11, textAlign: 'center' },
   footer: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1 },
   btn: { flex: 1, padding: 15, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

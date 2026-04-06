@@ -84,9 +84,8 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
   const theme    = Colors[scheme];
   const isIncome = transaction.type === 'INCOME';
 
-  // El campo icon en Turso es un emoji directo (🍔 🚗 🏠), no un nombre de Ionicons
   const catColor = transaction.categoryColor ?? '#6b7280';
-  const catEmoji = transaction.categoryIcon  ?? '📦';
+  const catIcon  = transaction.categoryIcon  ?? 'ellipse-outline';
   const catName  = transaction.category      ?? 'Sin categoría';
 
   const rawDate = transaction.date
@@ -115,7 +114,7 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
       <View style={styles.itemContent}>
         <View style={styles.itemTop}>
           <View style={[styles.categoryDot, { backgroundColor: catColor + '22' }]}>
-            <Text style={styles.categoryEmoji}>{catEmoji}</Text>
+            <Ionicons name={catIcon as any} size={18} color={catColor} />
           </View>
 
           <View style={styles.itemInfo}>
@@ -231,8 +230,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexShrink: 0,
   },
-  categoryEmoji: { fontSize: 18, lineHeight: 22 },
-
   itemInfo:     { flex: 1, gap: 2 },
   itemDesc:     { fontSize: 13, fontWeight: '600' },
   itemCategory: { fontSize: 11, fontWeight: '500' },

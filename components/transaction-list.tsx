@@ -429,18 +429,27 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
         </View>
 
         <View style={[styles.itemBottom, { borderTopColor: theme.divider }]}>
-          <View style={[styles.typeBadge, { backgroundColor: isIncome ? theme.incomeBg : theme.expenseBg }]}>
-            <Ionicons
-              name={isIncome ? 'trending-up' : 'trending-down'}
-              size={11}
-              color={isIncome ? theme.income : theme.expense}
-            />
-            <Text style={[styles.typeBadgeText, { color: isIncome ? theme.income : theme.expense }]}>
-              {isIncome ? 'Ingreso' : 'Gasto'}
-            </Text>
+          <View style={styles.badgeRow}>
+            <View style={[styles.typeBadge, { backgroundColor: isIncome ? theme.incomeBg : theme.expenseBg }]}>
+              <Ionicons
+                name={isIncome ? 'trending-up' : 'trending-down'}
+                size={11}
+                color={isIncome ? theme.income : theme.expense}
+              />
+              <Text style={[styles.typeBadgeText, { color: isIncome ? theme.income : theme.expense }]}>
+                {isIncome ? 'Ingreso' : 'Gasto'}
+              </Text>
+            </View>
+
+            {transaction.managedViaLoans && (
+              <View style={[styles.loanBadge, { backgroundColor: '#7c3aed18' }]}>
+                <Ionicons name="link" size={11} color="#7c3aed" />
+                <Text style={styles.loanBadgeText}>Préstamo</Text>
+              </View>
+            )}
           </View>
 
-          {onEdit && (
+          {onEdit && !transaction.managedViaLoans && (
             <TouchableOpacity
               style={[styles.editBtn, { backgroundColor: theme.tintLight }]}
               onPress={() => onEdit(transaction)}
@@ -608,6 +617,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   typeBadgeText: { fontSize: 11, fontWeight: '600' },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  loanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  loanBadgeText: { fontSize: 11, fontWeight: '600', color: '#7c3aed' },
   editBtn: {
     width: 28,
     height: 28,

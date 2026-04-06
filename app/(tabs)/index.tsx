@@ -56,6 +56,13 @@ export default function HomeScreen() {
     : [];
 
   const handleEditTransaction = (transaction: Transaction) => {
+    if (transaction.managedViaLoans) {
+      Alert.alert(
+        'Transacción protegida',
+        'Esta transacción es gestionada por un préstamo y no puede editarse directamente. Edita o elimina el préstamo correspondiente.',
+      );
+      return;
+    }
     setEditingTransaction(transaction);
     setTransactionModalVisible(true);
   };

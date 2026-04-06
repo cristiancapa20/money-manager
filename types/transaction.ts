@@ -15,8 +15,6 @@ export interface Transaction {
   deletedAt: string | null;
   /** true si la transacción fue creada automáticamente por un préstamo/pago */
   managedViaLoans?: boolean;
-  /** true si la transacción fue creada automáticamente por un préstamo/pago */
-  managedViaLoans?: boolean;
   /** Nombre de la categoría — join al leer, no columna real */
   category?: string;
   /** Color de la categoría — join al leer */

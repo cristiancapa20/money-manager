@@ -136,12 +136,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateTransaction = async (tx: Transaction) => {
     if (!user) throw new Error('No autenticado');
+    if (tx.managedViaLoans) {
+      throw new Error('Esta transacción es gestionada por un préstamo y no puede editarse directamente.');
+    }
     await db.updateTransaction({ ...tx, userId: user.id });
     await refreshTransactions();
   };
 
   const deleteTransaction = async (id: string) => {
     if (!user) throw new Error('No autenticado');
+    const tx = transactions.find((t) => t.id === id);
+    if (tx?.managedViaLoans) {
+      throw new Error('Esta transacción es gestionada por un préstamo y no puede eliminarse directamente.');
+    }
     await db.deleteTransaction(id, user.id);
     await refreshTransactions();
   };

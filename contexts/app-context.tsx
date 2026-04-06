@@ -241,7 +241,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user) throw new Error('No autenticado');
     await db.insertLoan({ ...loan, userId: user.id });
-    const fresh = await refreshLoans();
+    const [fresh] = await Promise.all([refreshLoans(), refreshTransactions()]);
     const created = fresh.find((l) => l.contactName === loan.contactName && l.amount === loan.amount);
     if (created) scheduleLoanReminder(created).catch(() => {});
   };

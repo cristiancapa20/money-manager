@@ -337,9 +337,19 @@ export async function getAllLoans(userId: string): Promise<Loan[]> {
 export async function insertLoan(
   loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'totalPaid' | 'accountName'>,
 ): Promise<void> {
-  const id = `loan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const id = `loan_${suffix}`;
+  const txId = `txl_${suffix}`;
   const now = new Date().toISOString();
   const amountCents = Math.round(loan.amount * 100);
+
+  // Balance check for LENT (expense — money leaves the account)
+  if (loan.type === 'LENT') {
+    const balance = await getAccountBalance(loan.accountId, loan.userId);
+    if (loan.amount > balance) {
+      throw new Error(`Saldo insuficiente. Balance disponible: $${balance.toFixed(2)}`);
+    }
+  }
 
   await turso.execute({
     sql: `INSERT INTO "Loan" (id, type, "contactName", amount, description, "dueDate", status, "reminderDays", "accountId", "userId", "createdAt", "updatedAt")
@@ -358,6 +368,19 @@ export async function insertLoan(
       now,
       now,
     ],
+  });
+
+  // Auto-create balance transaction
+  // LENT (presté dinero) → EXPENSE (sale de mi cuenta)
+  // OWED (me prestaron) → INCOME (entra a mi cuenta)
+  const txType = loan.type === 'LENT' ? 'EXPENSE' : 'INCOME';
+  const categoryId = loan.type === 'LENT' ? 'cat_sys_prestamo' : 'cat_sys_deuda';
+  const description = `Préstamo: ${loan.contactName}${loan.description ? ` - ${loan.description}` : ''}`;
+
+  await turso.execute({
+    sql: `INSERT INTO "Transaction" (id, amount, type, "categoryId", "accountId", "userId", description, date, "createdAt", "managedViaLoans")
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    args: [txId, amountCents, txType, categoryId, loan.accountId, loan.userId, description, now, now],
   });
 }
 
@@ -383,12 +406,30 @@ export async function updateLoan(
       loan.userId,
     ],
   });
+
+  // Sync the linked principal transaction (txl_*)
+  const loanSuffix = loan.id.replace(/^loan_/, '');
+  const txId = `txl_${loanSuffix}`;
+  const txDescription = `Préstamo: ${loan.contactName}${loan.description ? ` - ${loan.description}` : ''}`;
+
+  await turso.execute({
+    sql: `UPDATE "Transaction" SET amount = ?, description = ? WHERE id = ? AND "userId" = ?`,
+    args: [amountCents, txDescription, txId, loan.userId],
+  });
 }
 
 export async function deleteLoan(id: string, userId: string): Promise<void> {
   const now = new Date().toISOString();
 
-  // Soft-delete linked balance transactions (txlp_* IDs)
+  // Soft-delete the loan-creation balance transaction (txl_* ID)
+  const loanSuffix = id.replace(/^loan_/, '');
+  const loanTxId = `txl_${loanSuffix}`;
+  await turso.execute({
+    sql: `UPDATE "Transaction" SET "deletedAt" = ? WHERE id = ? AND "userId" = ?`,
+    args: [now, loanTxId, userId],
+  });
+
+  // Soft-delete linked payment balance transactions (txlp_* IDs)
   // Only touch payments for loans owned by this user
   const payments = await turso.execute({
     sql: `SELECT lp.id FROM "LoanPayment" lp
@@ -470,8 +511,8 @@ export async function insertLoanPayment(
   const description = `Pago préstamo: ${loan.contactName}${payment.note ? ` - ${payment.note}` : ''}`;
 
   await turso.execute({
-    sql: `INSERT INTO "Transaction" (id, amount, type, "categoryId", "accountId", "userId", description, date, "createdAt")
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    sql: `INSERT INTO "Transaction" (id, amount, type, "categoryId", "accountId", "userId", description, date, "createdAt", "managedViaLoans")
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     args: [txId, amountCents, txType, categoryId, payment.accountId, loan.userId, description, payment.date, now],
   });
 
@@ -651,6 +692,7 @@ function rowToTransaction(r: Record<string, any>): Transaction {
     date: String(r.date),
     createdAt: String(r.createdAt),
     deletedAt: r.deletedAt ? String(r.deletedAt) : null,
+    managedViaLoans: Boolean(r.managedViaLoans),
     category: r.category ? String(r.category) : undefined,
     categoryColor: r.categoryColor ? String(r.categoryColor) : undefined,
     categoryIcon: r.categoryIcon ? String(r.categoryIcon) : undefined,

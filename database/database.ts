@@ -8,6 +8,7 @@
  */
 
 import type { Card } from '@/types/card';
+import type { Loan, LoanPayment } from '@/types/loan';
 import type { Category, Transaction } from '@/types/transaction';
 import { turso } from './turso';
 
@@ -288,6 +289,87 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
   });
 }
 
+// ─── PRÉSTAMOS (Loans) ───────────────────────────────────────────────────────
+
+export async function getAllLoans(userId: string): Promise<Loan[]> {
+  const result = await turso.execute({
+    sql: `SELECT l.*,
+            a.name AS "accountName",
+            COALESCE(SUM(p.amount), 0) AS "totalPaid"
+          FROM "Loan" l
+          LEFT JOIN "Account" a ON l."accountId" = a.id
+          LEFT JOIN "LoanPayment" p ON p."loanId" = l.id
+          WHERE l."userId" = ?
+          GROUP BY l.id
+          ORDER BY l."createdAt" DESC`,
+    args: [userId],
+  });
+  return result.rows.map(rowToLoan);
+}
+
+export async function insertLoan(
+  loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'totalPaid' | 'accountName'>,
+): Promise<void> {
+  const id = `loan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const now = new Date().toISOString();
+  const amountCents = Math.round(loan.amount * 100);
+
+  await turso.execute({
+    sql: `INSERT INTO "Loan" (id, type, "contactName", amount, description, "dueDate", status, "reminderDays", "accountId", "userId", "createdAt", "updatedAt")
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      id,
+      loan.type,
+      loan.contactName,
+      amountCents,
+      loan.description,
+      loan.dueDate ?? null,
+      loan.status,
+      loan.reminderDays ?? null,
+      loan.accountId,
+      loan.userId,
+      now,
+      now,
+    ],
+  });
+}
+
+export async function updateLoan(
+  loan: Pick<Loan, 'id' | 'userId' | 'contactName' | 'amount' | 'description' | 'dueDate' | 'reminderDays' | 'status'>,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const amountCents = Math.round(loan.amount * 100);
+
+  await turso.execute({
+    sql: `UPDATE "Loan"
+          SET "contactName" = ?, amount = ?, description = ?, "dueDate" = ?, "reminderDays" = ?, status = ?, "updatedAt" = ?
+          WHERE id = ? AND "userId" = ?`,
+    args: [
+      loan.contactName,
+      amountCents,
+      loan.description,
+      loan.dueDate ?? null,
+      loan.reminderDays ?? null,
+      loan.status,
+      now,
+      loan.id,
+      loan.userId,
+    ],
+  });
+}
+
+export async function deleteLoan(id: string, userId: string): Promise<void> {
+  // Delete associated payments first
+  await turso.execute({
+    sql: `DELETE FROM "LoanPayment" WHERE "loanId" = ?`,
+    args: [id],
+  });
+  await turso.execute({
+    sql: `DELETE FROM "Loan" WHERE id = ? AND "userId" = ?`,
+    args: [id, userId],
+  });
+}
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 function rowToTransaction(r: Record<string, any>): Transaction {
@@ -305,5 +387,24 @@ function rowToTransaction(r: Record<string, any>): Transaction {
     category: r.category ? String(r.category) : undefined,
     categoryColor: r.categoryColor ? String(r.categoryColor) : undefined,
     categoryIcon: r.categoryIcon ? String(r.categoryIcon) : undefined,
+  };
+}
+
+function rowToLoan(r: Record<string, any>): Loan {
+  return {
+    id: String(r.id),
+    type: String(r.type) as Loan['type'],
+    contactName: String(r.contactName),
+    amount: Number(r.amount) / 100,
+    description: String(r.description ?? ''),
+    dueDate: r.dueDate ? String(r.dueDate) : null,
+    status: String(r.status) as Loan['status'],
+    reminderDays: r.reminderDays != null ? Number(r.reminderDays) : null,
+    accountId: String(r.accountId),
+    userId: String(r.userId),
+    createdAt: String(r.createdAt),
+    updatedAt: String(r.updatedAt),
+    totalPaid: Number(r.totalPaid ?? 0) / 100,
+    accountName: r.accountName ? String(r.accountName) : undefined,
   };
 }

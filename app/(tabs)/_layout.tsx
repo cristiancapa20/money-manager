@@ -70,6 +70,31 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="loans"
+        options={{
+          title: 'Préstamos',
+          tabBarIcon: ({ focused }) => (
+            <View style={{ alignItems: 'center' }}>
+              {focused && (
+                <View style={{
+                  position: 'absolute',
+                  top: -10,
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: theme.tabIconSelected,
+                }} />
+              )}
+              <Ionicons
+                name={focused ? 'cash' : 'cash-outline'}
+                size={23}
+                color={focused ? theme.tabIconSelected : theme.tabIconDefault}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="add-transaction"
         options={{
           title: '',

@@ -9,6 +9,7 @@ import {
 
 import * as db from '@/database/database';
 import type { Card } from '@/types/card';
+import type { Loan } from '@/types/loan';
 import type { Category, Transaction } from '@/types/transaction';
 import { useAuth } from './auth-context';
 
@@ -29,6 +30,11 @@ interface AppContextType {
   addCategory: (cat: Omit<Category, 'id' | 'isSystem' | 'userId'>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   refreshCategories: () => Promise<void>;
+  loans: Loan[];
+  addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'totalPaid' | 'accountName'>) => Promise<void>;
+  updateLoan: (loan: Pick<Loan, 'id' | 'contactName' | 'amount' | 'description' | 'dueDate' | 'reminderDays' | 'status'>) => Promise<void>;
+  deleteLoan: (id: string) => Promise<void>;
+  refreshLoans: () => Promise<void>;
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
   editingTransaction: Transaction | null;
@@ -45,6 +51,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [transactionModalVisible, setTransactionModalVisible] = useState(false);
@@ -56,15 +63,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       await db.initDatabase();
 
-      const [loadedCards, loadedTransactions, loadedCategories] = await Promise.all([
+      const [loadedCards, loadedTransactions, loadedCategories, loadedLoans] = await Promise.all([
         db.getAllCards(user.id),
         db.getAllTransactions(user.id),
         db.getAllCategories(user.id),
+        db.getAllLoans(user.id),
       ]);
 
       setCards(loadedCards);
       setTransactions(loadedTransactions);
       setCategories(loadedCategories);
+      setLoans(loadedLoans);
       setSelectedCardId((prev) => {
         if (prev && loadedCards.some((c) => c.id === prev)) return prev;
         return loadedCards.length > 0 ? loadedCards[0].id : null;
@@ -173,6 +182,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshCards();
   };
 
+  // ── Préstamos ──────────────────────────────────────────────────────────────
+
+  const refreshLoans = async () => {
+    if (!user) return;
+    const loaded = await db.getAllLoans(user.id);
+    setLoans(loaded);
+  };
+
+  const addLoan = async (
+    loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'totalPaid' | 'accountName'>
+  ) => {
+    if (!user) throw new Error('No autenticado');
+    await db.insertLoan({ ...loan, userId: user.id });
+    await refreshLoans();
+  };
+
+  const updateLoan = async (
+    loan: Pick<Loan, 'id' | 'contactName' | 'amount' | 'description' | 'dueDate' | 'reminderDays' | 'status'>
+  ) => {
+    if (!user) throw new Error('No autenticado');
+    await db.updateLoan({ ...loan, userId: user.id });
+    await refreshLoans();
+  };
+
+  const deleteLoan = async (id: string) => {
+    if (!user) throw new Error('No autenticado');
+    await db.deleteLoan(id, user.id);
+    await refreshLoans();
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -192,6 +231,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateCard,
         deleteCard,
         refreshCards,
+        loans,
+        addLoan,
+        updateLoan,
+        deleteLoan,
+        refreshLoans,
         selectedCardId,
         setSelectedCardId,
         editingTransaction,

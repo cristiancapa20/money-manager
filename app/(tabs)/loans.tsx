@@ -13,6 +13,7 @@ import {
   Alert,
   FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,6 +22,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type FilterType = 'ALL' | 'LENT' | 'OWED';
+type StatusFilter = 'ALL' | 'ACTIVE' | 'PAID';
 
 export default function LoansScreen() {
   const scheme = useColorScheme() ?? 'light';
@@ -29,14 +31,17 @@ export default function LoansScreen() {
   const { loans, cards, addLoan, updateLoan, deleteLoan, refreshLoans, isLoading } = useApp();
 
   const [filterType, setFilterType] = useState<FilterType>('ALL');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const filteredLoans = useMemo(() => {
-    if (filterType === 'ALL') return loans;
-    return loans.filter((l) => l.type === filterType);
-  }, [loans, filterType]);
+    let result = loans;
+    if (filterType !== 'ALL') result = result.filter((l) => l.type === filterType);
+    if (statusFilter !== 'ALL') result = result.filter((l) => l.status === statusFilter);
+    return result;
+  }, [loans, filterType, statusFilter]);
 
   const summary = useMemo(() => {
     const activeLent = loans.filter((l) => l.type === 'LENT' && l.status === 'ACTIVE');
@@ -106,6 +111,12 @@ export default function LoansScreen() {
     { label: 'Deudas', value: 'OWED' },
   ];
 
+  const statusFilters: { label: string; value: StatusFilter }[] = [
+    { label: 'Todos', value: 'ALL' },
+    { label: 'Activos', value: 'ACTIVE' },
+    { label: 'Pagados', value: 'PAID' },
+  ];
+
   const renderLoanItem = ({ item }: { item: Loan }) => {
     const balance = item.amount - (item.totalPaid ?? 0);
     const isLent = item.type === 'LENT';
@@ -165,6 +176,14 @@ export default function LoansScreen() {
           </View>
 
           <View style={styles.loanActions}>
+            {item.reminderDays != null && dueDate && !isPaid && (
+              <View style={styles.reminderBadge}>
+                <Ionicons name="notifications-outline" size={12} color={theme.textMuted} />
+                <Text style={[styles.reminderText, { color: theme.textMuted }]}>
+                  {item.reminderDays}d
+                </Text>
+              </View>
+            )}
             {dueDate && (
               <Text style={[styles.dueDateText, { color: isOverdue ? theme.expense : theme.textMuted }]}>
                 {dueDate.toLocaleDateString()}
@@ -218,7 +237,7 @@ export default function LoansScreen() {
       </View>
 
       {/* Filters */}
-      <View style={styles.filtersRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
         {filters.map((f) => {
           const active = filterType === f.value;
           return (
@@ -232,7 +251,24 @@ export default function LoansScreen() {
             </TouchableOpacity>
           );
         })}
-      </View>
+
+        <View style={styles.filterSeparator} />
+
+        {statusFilters.map((f) => {
+          const active = statusFilter === f.value;
+          const chipColor = f.value === 'PAID' ? theme.income : f.value === 'ACTIVE' ? theme.tint : theme.tint;
+          return (
+            <TouchableOpacity
+              key={f.value}
+              style={[styles.filterChip, { backgroundColor: active ? chipColor : theme.divider }]}
+              onPress={() => setStatusFilter(f.value)}>
+              <Text style={[styles.filterText, { color: active ? '#fff' : theme.textSecondary }]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       {/* List */}
       <FlatList
@@ -310,6 +346,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   filterText: { fontSize: 13, fontWeight: '600' },
+  filterSeparator: { width: 1, height: 20, backgroundColor: '#ccc', opacity: 0.4, marginHorizontal: 2 },
   list: { paddingHorizontal: 20, paddingBottom: 100 },
   loanCard: {
     borderRadius: 14,
@@ -350,6 +387,8 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontWeight: '600' },
   accountLabel: { fontSize: 11 },
   loanActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  reminderBadge: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  reminderText: { fontSize: 10, fontWeight: '500' },
   dueDateText: { fontSize: 11 },
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '600' },

@@ -8,8 +8,9 @@ import {
 } from 'react';
 
 import * as db from '@/database/database';
+import { scheduleLoanReminder, cancelLoanReminder, rescheduleAllLoanReminders } from '@/services/loan-notifications';
 import type { Card } from '@/types/card';
-import type { Loan } from '@/types/loan';
+import type { Loan, LoanPayment } from '@/types/loan';
 import type { Category, Transaction } from '@/types/transaction';
 import { useAuth } from './auth-context';
 
@@ -35,6 +36,10 @@ interface AppContextType {
   updateLoan: (loan: Pick<Loan, 'id' | 'contactName' | 'amount' | 'description' | 'dueDate' | 'reminderDays' | 'status'>) => Promise<void>;
   deleteLoan: (id: string) => Promise<void>;
   refreshLoans: () => Promise<void>;
+  getLoanPayments: (loanId: string) => Promise<LoanPayment[]>;
+  addLoanPayment: (payment: Omit<LoanPayment, 'id' | 'createdAt' | 'accountName'>, loan: Loan) => Promise<void>;
+  updateLoanPayment: (payment: Pick<LoanPayment, 'id' | 'accountId' | 'amount' | 'date' | 'note'>, loan: Loan, oldAmount: number) => Promise<void>;
+  deleteLoanPayment: (paymentId: string, loan: Loan, paymentAmount: number) => Promise<void>;
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
   editingTransaction: Transaction | null;
@@ -74,6 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setTransactions(loadedTransactions);
       setCategories(loadedCategories);
       setLoans(loadedLoans);
+      rescheduleAllLoanReminders(loadedLoans).catch(() => {});
       setSelectedCardId((prev) => {
         if (prev && loadedCards.some((c) => c.id === prev)) return prev;
         return loadedCards.length > 0 ? loadedCards[0].id : null;
@@ -196,6 +202,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('No autenticado');
     await db.insertLoan({ ...loan, userId: user.id });
     await refreshLoans();
+    // Schedule reminder after refresh so we have the full loan object
+    const created = loans.find((l) => l.contactName === loan.contactName && l.amount === loan.amount);
+    if (created) scheduleLoanReminder(created).catch(() => {});
   };
 
   const updateLoan = async (
@@ -204,12 +213,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('No autenticado');
     await db.updateLoan({ ...loan, userId: user.id });
     await refreshLoans();
+    // Reschedule reminder with updated data
+    const updated = loans.find((l) => l.id === loan.id);
+    if (updated) {
+      scheduleLoanReminder({ ...updated, ...loan }).catch(() => {});
+    }
   };
 
   const deleteLoan = async (id: string) => {
     if (!user) throw new Error('No autenticado');
+    await cancelLoanReminder(id);
     await db.deleteLoan(id, user.id);
     await refreshLoans();
+    await refreshTransactions();
+  };
+
+  // ── Pagos de préstamos ────────────────────────────────────────────────────
+
+  const getLoanPayments = async (loanId: string) => {
+    return db.getLoanPayments(loanId);
+  };
+
+  const addLoanPayment = async (
+    payment: Omit<LoanPayment, 'id' | 'createdAt' | 'accountName'>,
+    loan: Loan,
+  ) => {
+    if (!user) throw new Error('No autenticado');
+    await db.insertLoanPayment(payment, { ...loan, userId: user.id }, loan.totalPaid ?? 0);
+    await Promise.all([refreshLoans(), refreshTransactions()]);
+  };
+
+  const updateLoanPayment = async (
+    payment: Pick<LoanPayment, 'id' | 'accountId' | 'amount' | 'date' | 'note'>,
+    loan: Loan,
+    oldAmount: number,
+  ) => {
+    if (!user) throw new Error('No autenticado');
+    await db.updateLoanPayment(payment, { ...loan, userId: user.id }, loan.totalPaid ?? 0, oldAmount);
+    await Promise.all([refreshLoans(), refreshTransactions()]);
+  };
+
+  const deleteLoanPayment = async (paymentId: string, loan: Loan, paymentAmount: number) => {
+    if (!user) throw new Error('No autenticado');
+    await db.deleteLoanPayment(paymentId, { ...loan, userId: user.id }, loan.totalPaid ?? 0, paymentAmount);
+    await Promise.all([refreshLoans(), refreshTransactions()]);
   };
 
   return (
@@ -236,6 +283,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateLoan,
         deleteLoan,
         refreshLoans,
+        getLoanPayments,
+        addLoanPayment,
+        updateLoanPayment,
+        deleteLoanPayment,
         selectedCardId,
         setSelectedCardId,
         editingTransaction,

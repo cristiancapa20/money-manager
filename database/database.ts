@@ -9,6 +9,7 @@
 
 import type { Card } from '@/types/card';
 import type { Loan, LoanPayment } from '@/types/loan';
+import type { Subscription } from '@/types/subscription';
 import type { Category, Transaction } from '@/types/transaction';
 import { turso } from './turso';
 
@@ -37,6 +38,32 @@ export async function initDatabase(): Promise<void> {
       throw err;
     }
   }
+
+  // Asegurar que la columna managedViaLoans exista en Transaction
+  try {
+    await turso.execute(`ALTER TABLE "Transaction" ADD COLUMN "managedViaLoans" INTEGER NOT NULL DEFAULT 0`);
+  } catch (err: any) {
+    const msg = String(err?.message ?? '').toLowerCase();
+    if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+      throw err;
+    }
+  }
+
+  // Asegurar que la tabla Subscription exista
+  await turso.execute(`
+    CREATE TABLE IF NOT EXISTS "Subscription" (
+      "id" TEXT PRIMARY KEY,
+      "name" TEXT NOT NULL,
+      "amount" INTEGER NOT NULL,
+      "billingDay" INTEGER NOT NULL,
+      "active" INTEGER NOT NULL DEFAULT 1,
+      "accountId" TEXT NOT NULL,
+      "categoryId" TEXT,
+      "userId" TEXT NOT NULL,
+      "createdAt" TEXT NOT NULL,
+      "updatedAt" TEXT NOT NULL
+    )
+  `);
 }
 
 // ─── CATEGORÍAS ───────────────────────────────────────────────────────────────
@@ -535,6 +562,81 @@ export async function deleteLoanPayment(
   });
 }
 
+// ─── SUSCRIPCIONES (Subscriptions) ──────────────────────────────────────────
+
+export async function getAllSubscriptions(userId: string): Promise<Subscription[]> {
+  const result = await turso.execute({
+    sql: `SELECT s.*,
+            a.name AS "accountName",
+            c.name AS "categoryName",
+            c.color AS "categoryColor",
+            c.icon AS "categoryIcon"
+          FROM "Subscription" s
+          LEFT JOIN "Account" a ON s."accountId" = a.id
+          LEFT JOIN "Category" c ON s."categoryId" = c.id
+          WHERE s."userId" = ?
+          ORDER BY s."active" DESC, s."name" ASC`,
+    args: [userId],
+  });
+  return result.rows.map(rowToSubscription);
+}
+
+export async function insertSubscription(
+  sub: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt' | 'accountName' | 'categoryName' | 'categoryColor' | 'categoryIcon'>,
+): Promise<void> {
+  const id = `sub_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const now = new Date().toISOString();
+  const amountCents = Math.round(sub.amount * 100);
+
+  await turso.execute({
+    sql: `INSERT INTO "Subscription" (id, name, amount, "billingDay", active, "accountId", "categoryId", "userId", "createdAt", "updatedAt")
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      id,
+      sub.name,
+      amountCents,
+      sub.billingDay,
+      sub.active ? 1 : 0,
+      sub.accountId,
+      sub.categoryId ?? null,
+      sub.userId,
+      now,
+      now,
+    ],
+  });
+}
+
+export async function updateSubscription(
+  sub: Pick<Subscription, 'id' | 'userId' | 'name' | 'amount' | 'billingDay' | 'active' | 'accountId' | 'categoryId'>,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const amountCents = Math.round(sub.amount * 100);
+
+  await turso.execute({
+    sql: `UPDATE "Subscription"
+          SET name = ?, amount = ?, "billingDay" = ?, active = ?, "accountId" = ?, "categoryId" = ?, "updatedAt" = ?
+          WHERE id = ? AND "userId" = ?`,
+    args: [
+      sub.name,
+      amountCents,
+      sub.billingDay,
+      sub.active ? 1 : 0,
+      sub.accountId,
+      sub.categoryId ?? null,
+      now,
+      sub.id,
+      sub.userId,
+    ],
+  });
+}
+
+export async function deleteSubscription(id: string, userId: string): Promise<void> {
+  await turso.execute({
+    sql: `DELETE FROM "Subscription" WHERE id = ? AND "userId" = ?`,
+    args: [id, userId],
+  });
+}
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 function rowToTransaction(r: Record<string, any>): Transaction {
@@ -584,5 +686,24 @@ function rowToLoanPayment(r: Record<string, any>): LoanPayment {
     note: String(r.note ?? ''),
     createdAt: String(r.createdAt),
     accountName: r.accountName ? String(r.accountName) : undefined,
+  };
+}
+
+function rowToSubscription(r: Record<string, any>): Subscription {
+  return {
+    id: String(r.id),
+    name: String(r.name),
+    amount: Number(r.amount) / 100,
+    billingDay: Number(r.billingDay),
+    active: Boolean(r.active),
+    accountId: String(r.accountId),
+    categoryId: r.categoryId ? String(r.categoryId) : null,
+    userId: String(r.userId),
+    createdAt: String(r.createdAt),
+    updatedAt: String(r.updatedAt),
+    accountName: r.accountName ? String(r.accountName) : undefined,
+    categoryName: r.categoryName ? String(r.categoryName) : undefined,
+    categoryColor: r.categoryColor ? String(r.categoryColor) : undefined,
+    categoryIcon: r.categoryIcon ? String(r.categoryIcon) : undefined,
   };
 }

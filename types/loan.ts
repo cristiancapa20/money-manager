@@ -48,4 +48,6 @@ export interface LoanPayment {
   date: string;
   note: string;
   createdAt: string;
+  /** Nombre de la cuenta — join al leer */
+  accountName?: string;
 }

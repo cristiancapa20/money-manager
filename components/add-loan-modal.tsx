@@ -6,9 +6,11 @@ import type { Card } from '@/types/card';
 import type { Loan, LoanType, LoanStatus } from '@/types/loan';
 import { LOAN_TYPE_LABELS, LOAN_TYPE_ICONS, LOAN_STATUS_LABELS } from '@/types/loan';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
 import {
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -44,7 +46,8 @@ export function AddLoanModal({ visible, onClose, onSave, editingLoan, cards }: A
   const [contactName, setContactName] = useState('');
   const [amountInput, setAmountInput] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDateInput, setDueDateInput] = useState('');
+  const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [reminderDaysInput, setReminderDaysInput] = useState('');
   const [status, setStatus] = useState<LoanStatus>('ACTIVE');
   const [accountId, setAccountId] = useState('');
@@ -55,7 +58,7 @@ export function AddLoanModal({ visible, onClose, onSave, editingLoan, cards }: A
       setContactName(editingLoan.contactName);
       setAmountInput(String(editingLoan.amount));
       setDescription(editingLoan.description);
-      setDueDateInput(editingLoan.dueDate ? editingLoan.dueDate.split('T')[0] : '');
+      setDueDate(editingLoan.dueDate ? new Date(editingLoan.dueDate) : null);
       setReminderDaysInput(editingLoan.reminderDays != null ? String(editingLoan.reminderDays) : '');
       setStatus(editingLoan.status);
       setAccountId(editingLoan.accountId);
@@ -79,7 +82,7 @@ export function AddLoanModal({ visible, onClose, onSave, editingLoan, cards }: A
       contactName: contactName.trim(),
       amount,
       description: description.trim(),
-      dueDate: dueDateInput ? new Date(dueDateInput).toISOString() : null,
+      dueDate: dueDate ? dueDate.toISOString() : null,
       reminderDays: reminderDaysInput ? parseInt(reminderDaysInput, 10) : null,
       status,
       accountId,
@@ -92,7 +95,8 @@ export function AddLoanModal({ visible, onClose, onSave, editingLoan, cards }: A
     setContactName('');
     setAmountInput('');
     setDescription('');
-    setDueDateInput('');
+    setDueDate(null);
+    setShowDatePicker(false);
     setReminderDaysInput('');
     setStatus('ACTIVE');
     setAccountId(cards.length > 0 ? cards[0].id : '');
@@ -222,13 +226,39 @@ export function AddLoanModal({ visible, onClose, onSave, editingLoan, cards }: A
             {/* Fecha de vencimiento */}
             <View style={styles.section}>
               <Text style={[styles.label, { color: theme.textSecondary }]}>Fecha de vencimiento (opcional)</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }]}
-                value={dueDateInput}
-                onChangeText={setDueDateInput}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={theme.textMuted}
-              />
+              <View style={styles.dateRow}>
+                <TouchableOpacity
+                  style={[styles.input, styles.dateInput, { backgroundColor: theme.input, borderColor: theme.inputBorder }]}
+                  onPress={() => {
+                    if (!dueDate) setDueDate(new Date());
+                    setShowDatePicker(true);
+                  }}>
+                  <Ionicons name="calendar-outline" size={18} color={dueDate ? theme.text : theme.textMuted} />
+                  <Text style={{ color: dueDate ? theme.text : theme.textMuted, fontSize: 15, flex: 1 }}>
+                    {dueDate ? dueDate.toLocaleDateString() : 'Seleccionar fecha'}
+                  </Text>
+                </TouchableOpacity>
+                {dueDate && (
+                  <TouchableOpacity
+                    style={[styles.clearDateBtn, { backgroundColor: theme.divider }]}
+                    onPress={() => { setDueDate(null); setShowDatePicker(false); }}>
+                    <Ionicons name="close" size={18} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dueDate ?? new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  minimumDate={new Date()}
+                  onChange={(_event, selectedDate) => {
+                    if (Platform.OS === 'android') setShowDatePicker(false);
+                    if (selectedDate) setDueDate(selectedDate);
+                  }}
+                  themeVariant={scheme}
+                />
+              )}
             </View>
 
             {/* Días de recordatorio */}
@@ -309,6 +339,9 @@ const styles = StyleSheet.create({
   label: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15 },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
+  dateRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  dateInput: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  clearDateBtn: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   typeOption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, minWidth: '45%' },
   typeLabel: { fontSize: 13, fontWeight: '600' },

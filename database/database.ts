@@ -370,6 +370,151 @@ export async function deleteLoan(id: string, userId: string): Promise<void> {
   });
 }
 
+// ─── PAGOS DE PRÉSTAMOS (Loan Payments) ─────────────────────────────────────
+
+export async function getLoanPayments(loanId: string): Promise<LoanPayment[]> {
+  const result = await turso.execute({
+    sql: `SELECT lp.*, a.name AS "accountName"
+          FROM "LoanPayment" lp
+          LEFT JOIN "Account" a ON lp."accountId" = a.id
+          WHERE lp."loanId" = ?
+          ORDER BY lp.date DESC`,
+    args: [loanId],
+  });
+  return result.rows.map(rowToLoanPayment);
+}
+
+/**
+ * Inserta un pago parcial y crea la transacción de balance asociada.
+ * - LENT (presté) → el pago es dinero que me devuelven → INCOME
+ * - OWED (debo) → el pago es dinero que pago → EXPENSE
+ *
+ * Si totalPaid + newPayment >= loanAmount → marca el préstamo como PAID.
+ */
+export async function insertLoanPayment(
+  payment: Omit<LoanPayment, 'id' | 'createdAt' | 'accountName'>,
+  loan: Pick<Loan, 'id' | 'type' | 'amount' | 'userId' | 'contactName'>,
+  currentTotalPaid: number,
+): Promise<void> {
+  const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const paymentId = `lp_${suffix}`;
+  const txId = `txlp_${suffix}`;
+  const now = new Date().toISOString();
+  const amountCents = Math.round(payment.amount * 100);
+
+  // Balance check for OWED (expense)
+  if (loan.type === 'OWED') {
+    const balance = await getAccountBalance(payment.accountId, loan.userId);
+    if (payment.amount > balance) {
+      throw new Error(`Saldo insuficiente. Balance disponible: $${balance.toFixed(2)}`);
+    }
+  }
+
+  // Insert payment
+  await turso.execute({
+    sql: `INSERT INTO "LoanPayment" (id, "loanId", "accountId", amount, date, note, "createdAt")
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [paymentId, payment.loanId, payment.accountId, amountCents, payment.date, payment.note ?? '', now],
+  });
+
+  // Auto-create balance transaction
+  const txType = loan.type === 'LENT' ? 'INCOME' : 'EXPENSE';
+  const categoryId = loan.type === 'LENT' ? 'cat_sys_prestamo' : 'cat_sys_deuda';
+  const description = `Pago préstamo: ${loan.contactName}${payment.note ? ` - ${payment.note}` : ''}`;
+
+  await turso.execute({
+    sql: `INSERT INTO "Transaction" (id, amount, type, "categoryId", "accountId", "userId", description, date, "createdAt")
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [txId, amountCents, txType, categoryId, payment.accountId, loan.userId, description, payment.date, now],
+  });
+
+  // Auto-mark as PAID if fully paid
+  const newTotalPaid = currentTotalPaid + payment.amount;
+  if (newTotalPaid >= loan.amount) {
+    await turso.execute({
+      sql: `UPDATE "Loan" SET status = 'PAID', "updatedAt" = ? WHERE id = ?`,
+      args: [now, loan.id],
+    });
+  }
+}
+
+export async function updateLoanPayment(
+  payment: Pick<LoanPayment, 'id' | 'accountId' | 'amount' | 'date' | 'note'>,
+  loan: Pick<Loan, 'id' | 'type' | 'amount' | 'userId' | 'contactName'>,
+  currentTotalPaid: number,
+  oldPaymentAmount: number,
+): Promise<void> {
+  const amountCents = Math.round(payment.amount * 100);
+  const now = new Date().toISOString();
+
+  // Derive the linked transaction ID from payment ID
+  const txId = payment.id.replace(/^lp_/, 'txlp_');
+
+  // Balance check for OWED if amount increased
+  if (loan.type === 'OWED' && payment.amount > oldPaymentAmount) {
+    const diff = payment.amount - oldPaymentAmount;
+    const balance = await getAccountBalance(payment.accountId, loan.userId);
+    if (diff > balance) {
+      throw new Error(`Saldo insuficiente. Balance disponible: $${balance.toFixed(2)}`);
+    }
+  }
+
+  // Update payment
+  await turso.execute({
+    sql: `UPDATE "LoanPayment" SET "accountId" = ?, amount = ?, date = ?, note = ? WHERE id = ?`,
+    args: [payment.accountId, amountCents, payment.date, payment.note ?? '', payment.id],
+  });
+
+  // Update linked balance transaction
+  const txType = loan.type === 'LENT' ? 'INCOME' : 'EXPENSE';
+  const categoryId = loan.type === 'LENT' ? 'cat_sys_prestamo' : 'cat_sys_deuda';
+  const description = `Pago préstamo: ${loan.contactName}${payment.note ? ` - ${payment.note}` : ''}`;
+
+  await turso.execute({
+    sql: `UPDATE "Transaction" SET amount = ?, type = ?, "categoryId" = ?, "accountId" = ?, description = ?, date = ?
+          WHERE id = ? AND "userId" = ?`,
+    args: [amountCents, txType, categoryId, payment.accountId, description, payment.date, txId, loan.userId],
+  });
+
+  // Re-evaluate loan status
+  const newTotalPaid = currentTotalPaid - oldPaymentAmount + payment.amount;
+  const newStatus = newTotalPaid >= loan.amount ? 'PAID' : 'ACTIVE';
+  await turso.execute({
+    sql: `UPDATE "Loan" SET status = ?, "updatedAt" = ? WHERE id = ?`,
+    args: [newStatus, now, loan.id],
+  });
+}
+
+export async function deleteLoanPayment(
+  paymentId: string,
+  loan: Pick<Loan, 'id' | 'amount' | 'userId'>,
+  currentTotalPaid: number,
+  paymentAmount: number,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const txId = paymentId.replace(/^lp_/, 'txlp_');
+
+  // Delete payment
+  await turso.execute({
+    sql: `DELETE FROM "LoanPayment" WHERE id = ?`,
+    args: [paymentId],
+  });
+
+  // Delete linked balance transaction (soft delete)
+  await turso.execute({
+    sql: `UPDATE "Transaction" SET "deletedAt" = ? WHERE id = ? AND "userId" = ?`,
+    args: [now, txId, loan.userId],
+  });
+
+  // Re-evaluate loan status
+  const newTotalPaid = currentTotalPaid - paymentAmount;
+  const newStatus = newTotalPaid >= loan.amount ? 'PAID' : 'ACTIVE';
+  await turso.execute({
+    sql: `UPDATE "Loan" SET status = ?, "updatedAt" = ? WHERE id = ?`,
+    args: [newStatus, now, loan.id],
+  });
+}
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 function rowToTransaction(r: Record<string, any>): Transaction {
@@ -405,6 +550,19 @@ function rowToLoan(r: Record<string, any>): Loan {
     createdAt: String(r.createdAt),
     updatedAt: String(r.updatedAt),
     totalPaid: Number(r.totalPaid ?? 0) / 100,
+    accountName: r.accountName ? String(r.accountName) : undefined,
+  };
+}
+
+function rowToLoanPayment(r: Record<string, any>): LoanPayment {
+  return {
+    id: String(r.id),
+    loanId: String(r.loanId),
+    accountId: String(r.accountId),
+    amount: Number(r.amount) / 100,
+    date: String(r.date),
+    note: String(r.note ?? ''),
+    createdAt: String(r.createdAt),
     accountName: r.accountName ? String(r.accountName) : undefined,
   };
 }

@@ -362,9 +362,12 @@ export async function deleteLoan(id: string, userId: string): Promise<void> {
   const now = new Date().toISOString();
 
   // Soft-delete linked balance transactions (txlp_* IDs)
+  // Only touch payments for loans owned by this user
   const payments = await turso.execute({
-    sql: `SELECT id FROM "LoanPayment" WHERE "loanId" = ?`,
-    args: [id],
+    sql: `SELECT lp.id FROM "LoanPayment" lp
+          INNER JOIN "Loan" l ON lp."loanId" = l.id
+          WHERE lp."loanId" = ? AND l."userId" = ?`,
+    args: [id, userId],
   });
   for (const row of payments.rows) {
     const txId = String(row.id).replace(/^lp_/, 'txlp_');
@@ -374,10 +377,12 @@ export async function deleteLoan(id: string, userId: string): Promise<void> {
     });
   }
 
-  // Delete associated payments
+  // Delete associated payments only for the user's loan
   await turso.execute({
-    sql: `DELETE FROM "LoanPayment" WHERE "loanId" = ?`,
-    args: [id],
+    sql: `DELETE FROM "LoanPayment" WHERE "loanId" IN (
+            SELECT id FROM "Loan" WHERE id = ? AND "userId" = ?
+          )`,
+    args: [id, userId],
   });
   await turso.execute({
     sql: `DELETE FROM "Loan" WHERE id = ? AND "userId" = ?`,

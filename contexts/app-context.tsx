@@ -11,6 +11,7 @@ import * as db from '@/database/database';
 import { scheduleLoanReminder, cancelLoanReminder, rescheduleAllLoanReminders } from '@/services/loan-notifications';
 import type { Card } from '@/types/card';
 import type { Loan, LoanPayment } from '@/types/loan';
+import type { Subscription } from '@/types/subscription';
 import type { Category, Transaction } from '@/types/transaction';
 import { useAuth } from './auth-context';
 
@@ -31,6 +32,11 @@ interface AppContextType {
   addCategory: (cat: Omit<Category, 'id' | 'isSystem' | 'userId'>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   refreshCategories: () => Promise<void>;
+  subscriptions: Subscription[];
+  addSubscription: (sub: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'accountName' | 'categoryName' | 'categoryColor' | 'categoryIcon'>) => Promise<void>;
+  updateSubscription: (sub: Pick<Subscription, 'id' | 'name' | 'amount' | 'billingDay' | 'active' | 'accountId' | 'categoryId'>) => Promise<void>;
+  deleteSubscription: (id: string) => Promise<void>;
+  refreshSubscriptions: () => Promise<void>;
   loans: Loan[];
   addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'totalPaid' | 'accountName'>) => Promise<void>;
   updateLoan: (loan: Pick<Loan, 'id' | 'contactName' | 'amount' | 'description' | 'dueDate' | 'reminderDays' | 'status'>) => Promise<void>;
@@ -56,6 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -68,17 +75,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       await db.initDatabase();
 
-      const [loadedCards, loadedTransactions, loadedCategories, loadedLoans] = await Promise.all([
+      const [loadedCards, loadedTransactions, loadedCategories, loadedLoans, loadedSubscriptions] = await Promise.all([
         db.getAllCards(user.id),
         db.getAllTransactions(user.id),
         db.getAllCategories(user.id),
         db.getAllLoans(user.id),
+        db.getAllSubscriptions(user.id),
       ]);
 
       setCards(loadedCards);
       setTransactions(loadedTransactions);
       setCategories(loadedCategories);
       setLoans(loadedLoans);
+      setSubscriptions(loadedSubscriptions);
       rescheduleAllLoanReminders(loadedLoans).catch(() => {});
       setSelectedCardId((prev) => {
         if (prev && loadedCards.some((c) => c.id === prev)) return prev;
@@ -188,6 +197,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshCards();
   };
 
+  // ── Suscripciones ──────────────────────────────────────────────────────────
+
+  const refreshSubscriptions = async () => {
+    if (!user) return;
+    const loaded = await db.getAllSubscriptions(user.id);
+    setSubscriptions(loaded);
+  };
+
+  const addSubscription = async (
+    sub: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'accountName' | 'categoryName' | 'categoryColor' | 'categoryIcon'>
+  ) => {
+    if (!user) throw new Error('No autenticado');
+    await db.insertSubscription({ ...sub, userId: user.id });
+    await refreshSubscriptions();
+  };
+
+  const updateSubscription = async (
+    sub: Pick<Subscription, 'id' | 'name' | 'amount' | 'billingDay' | 'active' | 'accountId' | 'categoryId'>
+  ) => {
+    if (!user) throw new Error('No autenticado');
+    await db.updateSubscription({ ...sub, userId: user.id });
+    await refreshSubscriptions();
+  };
+
+  const deleteSubscription = async (id: string) => {
+    if (!user) throw new Error('No autenticado');
+    await db.deleteSubscription(id, user.id);
+    await refreshSubscriptions();
+  };
+
   // ── Préstamos ──────────────────────────────────────────────────────────────
 
   const refreshLoans = async (): Promise<Loan[]> => {
@@ -275,6 +314,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateCard,
         deleteCard,
         refreshCards,
+        subscriptions,
+        addSubscription,
+        updateSubscription,
+        deleteSubscription,
+        refreshSubscriptions,
         loans,
         addLoan,
         updateLoan,

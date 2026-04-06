@@ -70,6 +70,21 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
         </TouchableOpacity>
 
+        {/* Suscripciones */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
+          onPress={() => router.push('/(tabs)/subscriptions')}
+          activeOpacity={0.8}>
+          <Ionicons name="repeat-outline" size={20} color={theme.tint} />
+          <View style={styles.flex1}>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Suscripciones</Text>
+            <Text style={[styles.cardHint, { color: theme.textSecondary }]}>
+              Gestionar pagos recurrentes
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+        </TouchableOpacity>
+
         {/* Turso conectado */}
         <View style={[styles.card, { backgroundColor: theme.tintLight, borderColor: theme.tintBorder }]}>
           <Ionicons name="cloud-done" size={20} color={theme.tint} />

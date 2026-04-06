@@ -13,6 +13,8 @@ export interface Transaction {
   createdAt: string;
   /** ISO date string cuando se marcó como eliminada (soft delete), null si activa */
   deletedAt: string | null;
+  /** true si la transacción fue creada automáticamente por un préstamo/pago */
+  managedViaLoans?: boolean;
   /** Nombre de la categoría — join al leer, no columna real */
   category?: string;
   /** Color de la categoría — join al leer */

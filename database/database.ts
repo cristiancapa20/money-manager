@@ -343,6 +343,14 @@ export async function insertLoan(
   const now = new Date().toISOString();
   const amountCents = Math.round(loan.amount * 100);
 
+  // Balance check for LENT (expense — money leaves the account)
+  if (loan.type === 'LENT') {
+    const balance = await getAccountBalance(loan.accountId, loan.userId);
+    if (loan.amount > balance) {
+      throw new Error(`Saldo insuficiente. Balance disponible: $${balance.toFixed(2)}`);
+    }
+  }
+
   await turso.execute({
     sql: `INSERT INTO "Loan" (id, type, "contactName", amount, description, "dueDate", status, "reminderDays", "accountId", "userId", "createdAt", "updatedAt")
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -397,6 +405,16 @@ export async function updateLoan(
       loan.id,
       loan.userId,
     ],
+  });
+
+  // Sync the linked principal transaction (txl_*)
+  const loanSuffix = loan.id.replace(/^loan_/, '');
+  const txId = `txl_${loanSuffix}`;
+  const txDescription = `Préstamo: ${loan.contactName}${loan.description ? ` - ${loan.description}` : ''}`;
+
+  await turso.execute({
+    sql: `UPDATE "Transaction" SET amount = ?, description = ? WHERE id = ? AND "userId" = ?`,
+    args: [amountCents, txDescription, txId, loan.userId],
   });
 }
 

@@ -74,6 +74,7 @@ async function seed() {
       "description" TEXT DEFAULT '',
       "date"        TEXT NOT NULL,
       "createdAt"   TEXT NOT NULL DEFAULT (datetime('now')),
+      "deletedAt"   TEXT,
       FOREIGN KEY ("categoryId") REFERENCES "Category"("id"),
       FOREIGN KEY ("accountId") REFERENCES "Account"("id") ON DELETE CASCADE,
       FOREIGN KEY ("userId")    REFERENCES "User"("id")    ON DELETE CASCADE

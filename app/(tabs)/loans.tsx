@@ -1,4 +1,5 @@
 import { AddLoanModal } from '@/components/add-loan-modal';
+import { LoanDetailModal } from '@/components/loan-detail-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
@@ -34,6 +35,8 @@ export default function LoansScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
+  const [detailLoan, setDetailLoan] = useState<Loan | null>(null);
+  const [detailVisible, setDetailVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const filteredLoans = useMemo(() => {
@@ -84,6 +87,11 @@ export default function LoansScreen() {
     setModalVisible(true);
   };
 
+  const handleDetail = (loan: Loan) => {
+    setDetailLoan(loan);
+    setDetailVisible(true);
+  };
+
   const handleDelete = (loan: Loan) => {
     Alert.alert(
       'Eliminar Préstamo',
@@ -129,7 +137,7 @@ export default function LoansScreen() {
     return (
       <TouchableOpacity
         style={[styles.loanCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-        onPress={() => handleEdit(item)}
+        onPress={() => handleDetail(item)}
         activeOpacity={0.7}>
         <View style={styles.loanHeader}>
           <View style={[styles.typeBadge, { backgroundColor: bgColor }]}>
@@ -154,6 +162,21 @@ export default function LoansScreen() {
             )}
           </View>
         </View>
+
+        {/* Progress bar */}
+        {(item.totalPaid ?? 0) > 0 && (
+          <View style={[styles.loanProgressBar, { backgroundColor: theme.divider }]}>
+            <View
+              style={[
+                styles.loanProgressFill,
+                {
+                  width: `${Math.min(((item.totalPaid ?? 0) / item.amount) * 100, 100)}%`,
+                  backgroundColor: color,
+                },
+              ]}
+            />
+          </View>
+        )}
 
         <View style={styles.loanFooter}>
           <View style={styles.loanTags}>
@@ -189,6 +212,9 @@ export default function LoansScreen() {
                 {dueDate.toLocaleDateString()}
               </Text>
             )}
+            <TouchableOpacity onPress={() => handleEdit(item)} hitSlop={8}>
+              <Ionicons name="create-outline" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => handleDelete(item)} hitSlop={8}>
               <Ionicons name="trash-outline" size={18} color={theme.textMuted} />
             </TouchableOpacity>
@@ -299,6 +325,13 @@ export default function LoansScreen() {
         editingLoan={editingLoan}
         cards={cards}
       />
+
+      <LoanDetailModal
+        visible={detailVisible}
+        onClose={() => { setDetailVisible(false); setDetailLoan(null); }}
+        loan={detailLoan}
+        cards={cards}
+      />
     </ThemedView>
   );
 }
@@ -373,6 +406,8 @@ const styles = StyleSheet.create({
   loanAmounts: { alignItems: 'flex-end' },
   loanAmount: { fontSize: 16, fontWeight: '700' },
   loanBalance: { fontSize: 11, marginTop: 2 },
+  loanProgressBar: { height: 4, borderRadius: 2, overflow: 'hidden', marginBottom: 10 },
+  loanProgressFill: { height: '100%', borderRadius: 2 },
   loanFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -35,7 +35,7 @@ interface AppContextType {
   addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'totalPaid' | 'accountName'>) => Promise<void>;
   updateLoan: (loan: Pick<Loan, 'id' | 'contactName' | 'amount' | 'description' | 'dueDate' | 'reminderDays' | 'status'>) => Promise<void>;
   deleteLoan: (id: string) => Promise<void>;
-  refreshLoans: () => Promise<void>;
+  refreshLoans: () => Promise<Loan[]>;
   getLoanPayments: (loanId: string) => Promise<LoanPayment[]>;
   addLoanPayment: (payment: Omit<LoanPayment, 'id' | 'createdAt' | 'accountName'>, loan: Loan) => Promise<void>;
   updateLoanPayment: (payment: Pick<LoanPayment, 'id' | 'accountId' | 'amount' | 'date' | 'note'>, loan: Loan, oldAmount: number) => Promise<void>;
@@ -190,10 +190,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ── Préstamos ──────────────────────────────────────────────────────────────
 
-  const refreshLoans = async () => {
-    if (!user) return;
+  const refreshLoans = async (): Promise<Loan[]> => {
+    if (!user) return [];
     const loaded = await db.getAllLoans(user.id);
     setLoans(loaded);
+    return loaded;
   };
 
   const addLoan = async (
@@ -201,9 +202,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user) throw new Error('No autenticado');
     await db.insertLoan({ ...loan, userId: user.id });
-    await refreshLoans();
-    // Schedule reminder after refresh so we have the full loan object
-    const created = loans.find((l) => l.contactName === loan.contactName && l.amount === loan.amount);
+    const fresh = await refreshLoans();
+    const created = fresh.find((l) => l.contactName === loan.contactName && l.amount === loan.amount);
     if (created) scheduleLoanReminder(created).catch(() => {});
   };
 
@@ -212,12 +212,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user) throw new Error('No autenticado');
     await db.updateLoan({ ...loan, userId: user.id });
-    await refreshLoans();
-    // Reschedule reminder with updated data
-    const updated = loans.find((l) => l.id === loan.id);
-    if (updated) {
-      scheduleLoanReminder({ ...updated, ...loan }).catch(() => {});
-    }
+    const fresh = await refreshLoans();
+    const updated = fresh.find((l) => l.id === loan.id);
+    if (updated) scheduleLoanReminder(updated).catch(() => {});
   };
 
   const deleteLoan = async (id: string) => {

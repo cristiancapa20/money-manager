@@ -1,19 +1,45 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import type { Loan } from '@/types/loan';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+type NotificationsModule = typeof import('expo-notifications');
+type DeviceModule = typeof import('expo-device');
+
+let _notifications: NotificationsModule | null = null;
+let _device: DeviceModule | null = null;
+let _handlerSet = false;
+
+async function getNotifications(): Promise<NotificationsModule | null> {
+  if (Platform.OS === 'web' && typeof window === 'undefined') return null;
+  if (!_notifications) {
+    _notifications = await import('expo-notifications');
+    if (!_handlerSet) {
+      _handlerSet = true;
+      _notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+    }
+  }
+  return _notifications;
+}
+
+async function getDevice(): Promise<DeviceModule | null> {
+  if (Platform.OS === 'web' && typeof window === 'undefined') return null;
+  if (!_device) {
+    _device = await import('expo-device');
+  }
+  return _device;
+}
 
 export async function requestNotificationPermissions(): Promise<boolean> {
+  const Device = await getDevice();
+  const Notifications = await getNotifications();
+  if (!Device || !Notifications) return false;
   if (!Device.isDevice) return false;
 
   if (Platform.OS === 'android') {
@@ -35,16 +61,17 @@ export async function requestNotificationPermissions(): Promise<boolean> {
  * Cancels any existing notification for the same loan first.
  */
 export async function scheduleLoanReminder(loan: Loan): Promise<void> {
-  // Cancel existing reminder for this loan
   await cancelLoanReminder(loan.id);
 
   if (!loan.dueDate || loan.reminderDays == null || loan.status === 'PAID') return;
+
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
 
   const dueDate = new Date(loan.dueDate);
   const reminderDate = new Date(dueDate);
   reminderDate.setDate(reminderDate.getDate() - loan.reminderDays);
 
-  // Don't schedule if reminder date is in the past
   if (reminderDate <= new Date()) return;
 
   const hasPermission = await requestNotificationPermissions();
@@ -75,12 +102,16 @@ export async function scheduleLoanReminder(loan: Loan): Promise<void> {
 
 /** Cancel a scheduled reminder for a specific loan. */
 export async function cancelLoanReminder(loanId: string): Promise<void> {
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
   await Notifications.cancelScheduledNotificationAsync(`loan-reminder-${loanId}`);
 }
 
 /** Reschedule all active loan reminders (e.g. on app startup). */
 export async function rescheduleAllLoanReminders(loans: Loan[]): Promise<void> {
-  // Cancel all existing loan reminders
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
+
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const n of scheduled) {
     if (n.identifier.startsWith('loan-reminder-')) {
@@ -88,7 +119,6 @@ export async function rescheduleAllLoanReminders(loans: Loan[]): Promise<void> {
     }
   }
 
-  // Schedule active loans with reminders
   for (const loan of loans) {
     if (loan.status === 'ACTIVE' && loan.dueDate && loan.reminderDays != null) {
       await scheduleLoanReminder(loan);

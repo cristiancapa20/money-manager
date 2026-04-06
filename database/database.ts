@@ -49,6 +49,16 @@ export async function initDatabase(): Promise<void> {
     }
   }
 
+  // Asegurar que la columna managedViaSubscriptions exista en Transaction
+  try {
+    await turso.execute(`ALTER TABLE "Transaction" ADD COLUMN "managedViaSubscriptions" INTEGER NOT NULL DEFAULT 0`);
+  } catch (err: any) {
+    const msg = String(err?.message ?? '').toLowerCase();
+    if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+      throw err;
+    }
+  }
+
   // Asegurar que la tabla Subscription exista
   await turso.execute(`
     CREATE TABLE IF NOT EXISTS "Subscription" (
@@ -671,6 +681,38 @@ export async function updateSubscription(
   });
 }
 
+/**
+ * Crea una transacción automática para una suscripción.
+ * Devuelve true si se creó, false si ya existía (duplicado).
+ */
+export async function createSubscriptionTransaction(
+  sub: Subscription,
+  dateISO: string,
+): Promise<boolean> {
+  // Verificar duplicado: misma suscripción, mismo mes
+  const yearMonth = dateISO.slice(0, 7); // "YYYY-MM"
+  const existing = await turso.execute({
+    sql: `SELECT id FROM "Transaction"
+          WHERE description LIKE ? AND "userId" = ? AND date LIKE ? AND "managedViaSubscriptions" = 1 AND "deletedAt" IS NULL`,
+    args: [`Suscripción: ${sub.name}%`, sub.userId, `${yearMonth}%`],
+  });
+
+  if (existing.rows.length > 0) return false;
+
+  const id = `txs_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const now = new Date().toISOString();
+  const amountCents = Math.round(sub.amount * 100);
+  const description = `Suscripción: ${sub.name}`;
+
+  await turso.execute({
+    sql: `INSERT INTO "Transaction" (id, amount, type, "categoryId", "accountId", "userId", description, date, "createdAt", "managedViaSubscriptions")
+          VALUES (?, ?, 'EXPENSE', ?, ?, ?, ?, ?, ?, 1)`,
+    args: [id, amountCents, sub.categoryId ?? 'cat_sys_otros', sub.accountId, sub.userId, description, dateISO, now],
+  });
+
+  return true;
+}
+
 export async function deleteSubscription(id: string, userId: string): Promise<void> {
   await turso.execute({
     sql: `DELETE FROM "Subscription" WHERE id = ? AND "userId" = ?`,
@@ -693,6 +735,7 @@ function rowToTransaction(r: Record<string, any>): Transaction {
     createdAt: String(r.createdAt),
     deletedAt: r.deletedAt ? String(r.deletedAt) : null,
     managedViaLoans: Boolean(r.managedViaLoans),
+    managedViaSubscriptions: Boolean(r.managedViaSubscriptions),
     category: r.category ? String(r.category) : undefined,
     categoryColor: r.categoryColor ? String(r.categoryColor) : undefined,
     categoryIcon: r.categoryIcon ? String(r.categoryIcon) : undefined,

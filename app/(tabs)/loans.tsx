@@ -14,7 +14,6 @@ import {
   Alert,
   FlatList,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -113,16 +112,31 @@ export default function LoansScreen() {
     );
   };
 
-  const filters: { label: string; value: FilterType }[] = [
-    { label: 'Todos', value: 'ALL' },
-    { label: 'Prestados', value: 'LENT' },
-    { label: 'Deudas', value: 'OWED' },
+  const loanCounts = useMemo(() => {
+    const byType = { ALL: loans.length, LENT: 0, OWED: 0 };
+    const byStatus = { ALL: 0, ACTIVE: 0, PAID: 0 };
+    for (const l of loans) {
+      byType[l.type]++;
+    }
+    // Status counts respect current type filter
+    const typeFiltered = filterType === 'ALL' ? loans : loans.filter((l) => l.type === filterType);
+    byStatus.ALL = typeFiltered.length;
+    for (const l of typeFiltered) {
+      byStatus[l.status]++;
+    }
+    return { byType, byStatus };
+  }, [loans, filterType]);
+
+  const filters: { label: string; value: FilterType; icon: string }[] = [
+    { label: 'Todos', value: 'ALL', icon: 'list-outline' },
+    { label: 'Prestados', value: 'LENT', icon: 'arrow-up-circle-outline' },
+    { label: 'Deudas', value: 'OWED', icon: 'arrow-down-circle-outline' },
   ];
 
-  const statusFilters: { label: string; value: StatusFilter }[] = [
-    { label: 'Todos', value: 'ALL' },
-    { label: 'Activos', value: 'ACTIVE' },
-    { label: 'Pagados', value: 'PAID' },
+  const statusFilters: { label: string; value: StatusFilter; icon: string }[] = [
+    { label: 'Todos', value: 'ALL', icon: 'albums-outline' },
+    { label: 'Activos', value: 'ACTIVE', icon: 'time-outline' },
+    { label: 'Pagados', value: 'PAID', icon: 'checkmark-circle-outline' },
   ];
 
   const renderLoanItem = ({ item }: { item: Loan }) => {
@@ -262,39 +276,89 @@ export default function LoansScreen() {
         </View>
       </View>
 
-      {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
-        {filters.map((f) => {
-          const active = filterType === f.value;
-          return (
-            <TouchableOpacity
-              key={f.value}
-              style={[styles.filterChip, { backgroundColor: active ? theme.tint : theme.divider }]}
-              onPress={() => setFilterType(f.value)}>
-              <Text style={[styles.filterText, { color: active ? '#fff' : theme.textSecondary }]}>
-                {f.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Type Filter — Segmented Control */}
+      <View style={[styles.segmentedContainer, { paddingHorizontal: 20 }]}>
+        <View style={[styles.segmentedControl, { backgroundColor: theme.divider }]}>
+          {filters.map((f) => {
+            const active = filterType === f.value;
+            return (
+              <TouchableOpacity
+                key={f.value}
+                style={[
+                  styles.segmentedButton,
+                  active && { backgroundColor: theme.card, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+                ]}
+                onPress={() => setFilterType(f.value)}>
+                <Ionicons
+                  name={f.icon as any}
+                  size={15}
+                  color={active ? theme.tint : theme.textMuted}
+                />
+                <Text style={[
+                  styles.segmentedText,
+                  { color: active ? theme.text : theme.textSecondary },
+                  active && { fontWeight: '700' },
+                ]}>
+                  {f.label}
+                </Text>
+                <View style={[
+                  styles.countBadge,
+                  { backgroundColor: active ? theme.tintLight : 'transparent' },
+                ]}>
+                  <Text style={[
+                    styles.countText,
+                    { color: active ? theme.tint : theme.textMuted },
+                  ]}>
+                    {loanCounts.byType[f.value]}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
-        <View style={styles.filterSeparator} />
-
-        {statusFilters.map((f) => {
-          const active = statusFilter === f.value;
-          const chipColor = f.value === 'PAID' ? theme.income : f.value === 'ACTIVE' ? theme.tint : theme.tint;
-          return (
-            <TouchableOpacity
-              key={f.value}
-              style={[styles.filterChip, { backgroundColor: active ? chipColor : theme.divider }]}
-              onPress={() => setStatusFilter(f.value)}>
-              <Text style={[styles.filterText, { color: active ? '#fff' : theme.textSecondary }]}>
-                {f.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      {/* Status Filter — Segmented Control */}
+      <View style={[styles.segmentedContainer, { paddingHorizontal: 20 }]}>
+        <View style={[styles.segmentedControl, { backgroundColor: theme.divider }]}>
+          {statusFilters.map((f) => {
+            const active = statusFilter === f.value;
+            return (
+              <TouchableOpacity
+                key={f.value}
+                style={[
+                  styles.segmentedButton,
+                  active && { backgroundColor: theme.card, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+                ]}
+                onPress={() => setStatusFilter(f.value)}>
+                <Ionicons
+                  name={f.icon as any}
+                  size={15}
+                  color={active ? theme.tint : theme.textMuted}
+                />
+                <Text style={[
+                  styles.segmentedText,
+                  { color: active ? theme.text : theme.textSecondary },
+                  active && { fontWeight: '700' },
+                ]}>
+                  {f.label}
+                </Text>
+                <View style={[
+                  styles.countBadge,
+                  { backgroundColor: active ? theme.tintLight : 'transparent' },
+                ]}>
+                  <Text style={[
+                    styles.countText,
+                    { color: active ? theme.tint : theme.textMuted },
+                  ]}>
+                    {loanCounts.byStatus[f.value]}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       {/* List */}
       <FlatList
@@ -367,19 +431,32 @@ const styles = StyleSheet.create({
   },
   summaryLabel: { fontSize: 12, fontWeight: '600' },
   summaryAmount: { fontSize: 18, fontWeight: '700' },
-  filtersRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 20,
+  segmentedContainer: {
     marginBottom: 12,
   },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+  segmentedControl: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 3,
   },
-  filterText: { fontSize: 13, fontWeight: '600' },
-  filterSeparator: { width: 1, height: 20, backgroundColor: '#ccc', opacity: 0.4, marginHorizontal: 2 },
+  segmentedButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  segmentedText: { fontSize: 13, fontWeight: '600' },
+  countBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  countText: { fontSize: 11, fontWeight: '700' },
   list: { paddingHorizontal: 20, paddingBottom: 100 },
   loanCard: {
     borderRadius: 14,

@@ -68,7 +68,13 @@ export default function CategoriesScreen() {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => deleteCategory(id),
+          onPress: async () => {
+            try {
+              await deleteCategory(id);
+            } catch (err: any) {
+              Alert.alert('Error', err.message ?? 'No se pudo eliminar la categoría');
+            }
+          },
         },
       ],
     );

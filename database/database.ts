@@ -26,6 +26,16 @@ export async function initDatabase(): Promise<void> {
       throw err;
     }
   }
+
+  // Asegurar que la columna deletedAt exista en Transaction
+  try {
+    await turso.execute(`ALTER TABLE "Transaction" ADD COLUMN "deletedAt" TEXT`);
+  } catch (err: any) {
+    const msg = String(err?.message ?? '').toLowerCase();
+    if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+      throw err;
+    }
+  }
 }
 
 // ─── CATEGORÍAS ───────────────────────────────────────────────────────────────
@@ -89,7 +99,30 @@ export async function insertCategory(
   });
 }
 
+export async function countTransactionsByCategoryId(categoryId: string, userId: string): Promise<number> {
+  const result = await turso.execute({
+    sql: `SELECT COUNT(*) AS cnt FROM "Transaction" WHERE "categoryId" = ? AND "userId" = ? AND "deletedAt" IS NULL`,
+    args: [categoryId, userId],
+  });
+  return Number(result.rows[0].cnt);
+}
+
 export async function deleteCategory(id: string, userId: string): Promise<void> {
+  // Check if it's a system category
+  const catResult = await turso.execute({
+    sql: `SELECT "isSystem" FROM "Category" WHERE id = ?`,
+    args: [id],
+  });
+  if (catResult.rows.length > 0 && Number(catResult.rows[0].isSystem) === 1) {
+    throw new Error('No se puede eliminar una categoría del sistema.');
+  }
+
+  // Check for associated transactions
+  const count = await countTransactionsByCategoryId(id, userId);
+  if (count > 0) {
+    throw new Error(`No se puede eliminar la categoría porque tiene ${count} transacción(es) asociada(s).`);
+  }
+
   await turso.execute({
     sql: `DELETE FROM "Category" WHERE id = ? AND "userId" = ? AND "isSystem" = 0`,
     args: [id, userId],

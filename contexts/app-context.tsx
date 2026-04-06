@@ -9,6 +9,7 @@ import {
 
 import * as db from '@/database/database';
 import { scheduleLoanReminder, cancelLoanReminder, rescheduleAllLoanReminders } from '@/services/loan-notifications';
+import { processSubscriptions, type SubscriptionProcessResult } from '@/services/subscription-processor';
 import type { Card } from '@/types/card';
 import type { Loan, LoanPayment } from '@/types/loan';
 import type { Subscription } from '@/types/subscription';
@@ -52,6 +53,7 @@ interface AppContextType {
   setEditingTransaction: (tx: Transaction | null) => void;
   transactionModalVisible: boolean;
   setTransactionModalVisible: (v: boolean) => void;
+  subscriptionProcessResult: SubscriptionProcessResult | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -68,6 +70,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [transactionModalVisible, setTransactionModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionProcessResult, setSubscriptionProcessResult] = useState<SubscriptionProcessResult | null>(null);
 
   const loadAll = useCallback(async () => {
     if (!user) return;
@@ -89,6 +92,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setLoans(loadedLoans);
       setSubscriptions(loadedSubscriptions);
       rescheduleAllLoanReminders(loadedLoans).catch(() => {});
+
+      // Procesar suscripciones automáticas
+      processSubscriptions(loadedSubscriptions, user.id)
+        .then(async (result) => {
+          setSubscriptionProcessResult(result);
+          if (result.created > 0) {
+            // Refrescar transacciones si se crearon nuevas
+            const freshTx = await db.getAllTransactions(user.id);
+            setTransactions(freshTx);
+          }
+        })
+        .catch((err) => console.error('Error procesando suscripciones:', err));
       setSelectedCardId((prev) => {
         if (prev && loadedCards.some((c) => c.id === prev)) return prev;
         return loadedCards.length > 0 ? loadedCards[0].id : null;
@@ -139,6 +154,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (tx.managedViaLoans) {
       throw new Error('Esta transacción es gestionada por un préstamo y no puede editarse directamente.');
     }
+    if (tx.managedViaSubscriptions) {
+      throw new Error('Esta transacción fue creada automáticamente por una suscripción y no puede editarse.');
+    }
     await db.updateTransaction({ ...tx, userId: user.id });
     await refreshTransactions();
   };
@@ -148,6 +166,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const tx = transactions.find((t) => t.id === id);
     if (tx?.managedViaLoans) {
       throw new Error('Esta transacción es gestionada por un préstamo y no puede eliminarse directamente.');
+    }
+    if (tx?.managedViaSubscriptions) {
+      throw new Error('Esta transacción fue creada automáticamente por una suscripción y no puede eliminarse.');
     }
     await db.deleteTransaction(id, user.id);
     await refreshTransactions();
@@ -341,6 +362,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setEditingTransaction,
         transactionModalVisible,
         setTransactionModalVisible,
+        subscriptionProcessResult,
       }}>
       {children}
     </AppContext.Provider>

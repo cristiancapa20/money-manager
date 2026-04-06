@@ -447,9 +447,16 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
                 <Text style={styles.loanBadgeText}>Préstamo</Text>
               </View>
             )}
+
+            {transaction.managedViaSubscriptions && (
+              <View style={[styles.subscriptionBadge, { backgroundColor: '#0891b218' }]}>
+                <Ionicons name="repeat" size={11} color="#0891b2" />
+                <Text style={styles.subscriptionBadgeText}>Automática</Text>
+              </View>
+            )}
           </View>
 
-          {onEdit && !transaction.managedViaLoans && (
+          {onEdit && !transaction.managedViaLoans && !transaction.managedViaSubscriptions && (
             <TouchableOpacity
               style={[styles.editBtn, { backgroundColor: theme.tintLight }]}
               onPress={() => onEdit(transaction)}
@@ -627,6 +634,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   loanBadgeText: { fontSize: 11, fontWeight: '600', color: '#7c3aed' },
+  subscriptionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  subscriptionBadgeText: { fontSize: 11, fontWeight: '600', color: '#0891b2' },
   editBtn: {
     width: 28,
     height: 28,

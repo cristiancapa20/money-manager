@@ -34,6 +34,7 @@ export default function SubscriptionsScreen() {
     deleteSubscription,
     refreshSubscriptions,
     isLoading,
+    subscriptionProcessResult,
   } = useApp();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
@@ -240,6 +241,27 @@ export default function SubscriptionsScreen() {
         </View>
       </View>
 
+      {/* Último procesamiento */}
+      {subscriptionProcessResult && (
+        <View style={[styles.processBanner, { backgroundColor: subscriptionProcessResult.created > 0 ? theme.incomeBg : theme.divider }]}>
+          <Ionicons
+            name={subscriptionProcessResult.created > 0 ? 'checkmark-circle' : 'time-outline'}
+            size={16}
+            color={subscriptionProcessResult.created > 0 ? theme.income : theme.textMuted}
+          />
+          <View style={styles.processBannerText}>
+            <Text style={[styles.processTitle, { color: subscriptionProcessResult.created > 0 ? theme.income : theme.textSecondary }]}>
+              {subscriptionProcessResult.created > 0
+                ? `${subscriptionProcessResult.created} cobro${subscriptionProcessResult.created > 1 ? 's' : ''} registrado${subscriptionProcessResult.created > 1 ? 's' : ''} hoy`
+                : 'Sin cobros pendientes hoy'}
+            </Text>
+            <Text style={[styles.processSubtitle, { color: theme.textMuted }]}>
+              Última verificación: {new Date(subscriptionProcessResult.processedAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Status Filter — Segmented Control */}
       <View style={[styles.segmentedContainer, { paddingHorizontal: 20 }]}>
         <View style={[styles.segmentedControl, { backgroundColor: theme.divider }]}>
@@ -416,6 +438,19 @@ const styles = StyleSheet.create({
   categoryDot: { width: 8, height: 8, borderRadius: 4 },
   categoryLabel: { fontSize: 11 },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  processBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  processBannerText: { flex: 1, gap: 2 },
+  processTitle: { fontSize: 13, fontWeight: '600' },
+  processSubtitle: { fontSize: 11 },
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '600' },
   emptySubtext: { fontSize: 13 },

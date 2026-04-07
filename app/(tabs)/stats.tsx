@@ -1,13 +1,23 @@
 import { BalanceChart } from '@/components/balance-chart';
+import { CategoryBreakdown } from '@/components/category-breakdown';
+import { MonthlySummary } from '@/components/monthly-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TransactionCalendar } from '@/components/transaction-calendar';
 import { useApp } from '@/contexts/app-context';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
-import { useMemo } from 'react';
+
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
 
 export default function StatsScreen() {
   const { transactions, cards, selectedCardId, isLoading } = useApp();
+
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
   const selectedCard = useMemo(() => {
     if (!selectedCardId || cards.length === 0) return null;
@@ -19,9 +29,48 @@ export default function StatsScreen() {
     return transactions.filter((t) => t.accountId === selectedCard.id);
   }, [transactions, selectedCard]);
 
+  const monthlyTransactions = useMemo(() => {
+    return cardTransactions.filter((t) => {
+      const d = new Date(t.date || t.createdAt);
+      return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    });
+  }, [cardTransactions, selectedMonth, selectedYear]);
+
+  const { totalIncome, totalExpenses, balance } = useMemo(() => {
+    let income = 0;
+    let expenses = 0;
+    monthlyTransactions.forEach((t) => {
+      if (t.type === 'INCOME') income += t.amount;
+      else expenses += t.amount;
+    });
+    return { totalIncome: income, totalExpenses: expenses, balance: income - expenses };
+  }, [monthlyTransactions]);
+
   const selectedCards = useMemo(() => {
     return selectedCard ? [selectedCard] : [];
   }, [selectedCard]);
+
+  const monthLabel = `${MONTH_NAMES[selectedMonth]} ${selectedYear}`;
+
+  const handlePrevMonth = useCallback(() => {
+    setSelectedMonth((m) => {
+      if (m === 0) {
+        setSelectedYear((y) => y - 1);
+        return 11;
+      }
+      return m - 1;
+    });
+  }, []);
+
+  const handleNextMonth = useCallback(() => {
+    setSelectedMonth((m) => {
+      if (m === 11) {
+        setSelectedYear((y) => y + 1);
+        return 0;
+      }
+      return m + 1;
+    });
+  }, []);
 
   if (isLoading) {
     return (
@@ -43,8 +92,16 @@ export default function StatsScreen() {
         showsVerticalScrollIndicator={false}>
         {selectedCard ? (
           <>
-            <TransactionCalendar transactions={cardTransactions} />
-            <BalanceChart transactions={cardTransactions} cards={selectedCards} />
+            <MonthlySummary
+              totalIncome={totalIncome}
+              totalExpenses={totalExpenses}
+              balance={balance}
+              monthLabel={monthLabel}
+              onPrevMonth={handlePrevMonth}
+              onNextMonth={handleNextMonth}
+            />
+            <CategoryBreakdown transactions={monthlyTransactions} />
+<BalanceChart transactions={cardTransactions} cards={selectedCards} />
           </>
         ) : (
           <View style={styles.emptyState}>
@@ -79,7 +136,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // Espacio para el tab bar flotante
+    paddingBottom: 100,
   },
   emptyState: {
     flex: 1,
@@ -94,4 +151,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

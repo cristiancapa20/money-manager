@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -31,6 +32,28 @@ function RootLayoutContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+
+  // Deep linking — redirige costos://reset-password?token=xxx
+  useEffect(() => {
+    function handleDeepLink(event: { url: string }) {
+      const parsed = Linking.parse(event.url);
+      if (parsed.path === 'reset-password' && parsed.queryParams?.token) {
+        router.replace({
+          pathname: '/(auth)/reset-password',
+          params: { token: parsed.queryParams.token as string },
+        });
+      }
+    }
+
+    // Handle URL that opened the app (cold start)
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    // Handle URL while app is open (warm start)
+    const sub = Linking.addEventListener('url', handleDeepLink);
+    return () => sub.remove();
+  }, [router]);
 
   // Guardia de autenticación
   useEffect(() => {

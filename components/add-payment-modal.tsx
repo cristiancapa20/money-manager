@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCurrency } from '@/hooks/use-currency';
 import type { Card } from '@/types/card';
 import type { LoanPayment } from '@/types/loan';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +31,7 @@ interface AddPaymentModalProps {
 export function AddPaymentModal({ visible, onClose, onSave, editingPayment, cards, maxAmount }: AddPaymentModalProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
+  const { formatCurrency } = useCurrency();
 
   const [amountInput, setAmountInput] = useState('');
   const [note, setNote] = useState('');
@@ -110,7 +112,7 @@ export function AddPaymentModal({ visible, onClose, onSave, editingPayment, card
               />
               {maxAmount != null && maxAmount > 0 && (
                 <Text style={[styles.hint, { color: theme.textMuted }]}>
-                  Pendiente: ${maxAmount.toFixed(2)}
+                  Pendiente: {formatCurrency(maxAmount)}
                 </Text>
               )}
             </View>

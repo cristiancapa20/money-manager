@@ -1,3 +1,4 @@
+import { useCurrency } from '@/hooks/use-currency';
 import type { Card } from '@/types/card';
 import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_ICONS } from '@/types/card';
 import { Ionicons } from '@expo/vector-icons';
@@ -111,13 +112,7 @@ interface CardItemProps {
 
 function CardItem({ card, balance, onDeleteCard, onEditCard }: CardItemProps) {
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrency();
 
   const cardColor = card.color || '#1E3A8A';
   const darkerColor = adjustColor(cardColor, -30);

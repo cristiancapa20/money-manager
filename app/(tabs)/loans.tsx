@@ -5,6 +5,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useApp } from '@/contexts/app-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCurrency } from '@/hooks/use-currency';
 import type { Loan, LoanType } from '@/types/loan';
 import { LOAN_TYPE_LABELS, LOAN_TYPE_ICONS, LOAN_STATUS_LABELS } from '@/types/loan';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +30,7 @@ export default function LoansScreen() {
   const theme = Colors[scheme];
   const insets = useSafeAreaInsets();
   const { loans, cards, addLoan, updateLoan, deleteLoan, refreshLoans, isLoading } = useApp();
+  const { formatCurrency } = useCurrency();
 
   const [filterType, setFilterType] = useState<FilterType>('ALL');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
@@ -94,7 +96,7 @@ export default function LoansScreen() {
   const handleDelete = (loan: Loan) => {
     Alert.alert(
       'Eliminar Préstamo',
-      `¿Eliminar el préstamo de ${loan.contactName} por $${loan.amount.toFixed(2)}? Se eliminarán también los pagos asociados.`,
+      `¿Eliminar el préstamo de ${loan.contactName} por ${formatCurrency(loan.amount)}? Se eliminarán también los pagos asociados.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -167,11 +169,11 @@ export default function LoansScreen() {
           </View>
           <View style={styles.loanAmounts}>
             <Text style={[styles.loanAmount, { color }]}>
-              {isLent ? '+' : '-'}${item.amount.toFixed(2)}
+              {isLent ? '+' : '-'}{formatCurrency(item.amount)}
             </Text>
             {balance > 0 && !isPaid && (
               <Text style={[styles.loanBalance, { color: theme.textSecondary }]}>
-                Pendiente: ${balance.toFixed(2)}
+                Pendiente: {formatCurrency(balance)}
               </Text>
             )}
           </View>
@@ -264,14 +266,14 @@ export default function LoansScreen() {
           <Ionicons name="arrow-up-circle-outline" size={20} color={theme.income} />
           <Text style={[styles.summaryLabel, { color: theme.income }]}>Prestado</Text>
           <Text style={[styles.summaryAmount, { color: theme.income }]}>
-            ${summary.totalLent.toFixed(2)}
+            {formatCurrency(summary.totalLent)}
           </Text>
         </View>
         <View style={[styles.summaryCard, { backgroundColor: theme.expenseBg }]}>
           <Ionicons name="arrow-down-circle-outline" size={20} color={theme.expense} />
           <Text style={[styles.summaryLabel, { color: theme.expense }]}>Deuda</Text>
           <Text style={[styles.summaryAmount, { color: theme.expense }]}>
-            ${summary.totalOwed.toFixed(2)}
+            {formatCurrency(summary.totalOwed)}
           </Text>
         </View>
       </View>

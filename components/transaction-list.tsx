@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useApp } from '@/contexts/app-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCurrency } from '@/hooks/use-currency';
 import type { Category, Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -44,6 +45,7 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
   const scheme = useColorScheme() ?? 'light';
   const theme  = Colors[scheme];
   const { categories } = useApp();
+  const { formatCurrency } = useCurrency();
 
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
@@ -376,6 +378,7 @@ interface TransactionItemProps {
 function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
   const scheme   = useColorScheme() ?? 'light';
   const theme    = Colors[scheme];
+  const { formatCurrency } = useCurrency();
   const isIncome = transaction.type === 'INCOME';
 
   const catColor = transaction.categoryColor ?? '#6b7280';
@@ -421,10 +424,7 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
           </View>
 
           <Text style={[styles.itemAmount, { color: isIncome ? theme.income : theme.expense }]}>
-            {isIncome ? '+' : '-'}${transaction.amount.toLocaleString('es-MX', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
           </Text>
         </View>
 

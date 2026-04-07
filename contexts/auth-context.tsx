@@ -21,6 +21,8 @@ export interface AuthUser {
    * - null si no hay foto
    */
   avatarUri: string | null;
+  /** Código ISO de moneda preferida (ej. MXN, USD, EUR). Default: MXN */
+  preferredCurrency: string;
 }
 
 interface AuthContextType {
@@ -29,8 +31,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  /** Actualiza displayName y avatar en Turso (y en caché local) */
-  updateProfile: (displayName: string, avatarUri: string | null) => Promise<void>;
+  /** Actualiza displayName, avatar y moneda preferida en Turso (y en caché local) */
+  updateProfile: (displayName: string, avatarUri: string | null, preferredCurrency: string) => Promise<void>;
 }
 
 const STORAGE_KEY = 'costos_auth_user';
@@ -51,7 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const parsed: AuthUser = JSON.parse(stored);
           // Preferir el avatar en caché local (puede estar más actualizado)
           const cachedAvatar = await AsyncStorage.getItem(AVATAR_KEY + '_' + parsed.id);
-          setUser({ ...parsed, avatarUri: cachedAvatar ?? parsed.avatarUri ?? null });
+          setUser({
+            ...parsed,
+            avatarUri: cachedAvatar ?? parsed.avatarUri ?? null,
+            preferredCurrency: parsed.preferredCurrency ?? 'MXN',
+          });
         }
       } catch {
         // sesión corrupta — ignorar
@@ -86,15 +92,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: normalizedEmail,
       displayName: null,
       avatarUri: null,
+      preferredCurrency: 'MXN',
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
     setUser(authUser);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    // Leer también el campo `avatar` de Turso para sincronizarlo
+    // Leer también el campo `avatar` y `preferredCurrency` de Turso para sincronizarlo
     const result = await turso.execute({
-      sql: `SELECT id, email, "passwordHash", "displayName", avatar FROM "User" WHERE email = ? LIMIT 1`,
+      sql: `SELECT id, email, "passwordHash", "displayName", avatar, "preferredCurrency" FROM "User" WHERE email = ? LIMIT 1`,
       args: [email.trim().toLowerCase()],
     });
 
@@ -122,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email:       String(row.email),
       displayName: row.displayName ? String(row.displayName) : null,
       avatarUri,
+      preferredCurrency: row.preferredCurrency ? String(row.preferredCurrency) : 'MXN',
     };
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
@@ -133,13 +141,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const updateProfile = useCallback(async (displayName: string, avatarUri: string | null) => {
+  const updateProfile = useCallback(async (displayName: string, avatarUri: string | null, preferredCurrency: string) => {
     if (!user) return;
 
-    // Actualizar displayName y avatar en Turso
+    // Actualizar displayName, avatar y moneda preferida en Turso
     await turso.execute({
-      sql: `UPDATE "User" SET "displayName" = ?, avatar = ? WHERE id = ?`,
-      args: [displayName.trim(), avatarUri ?? null, user.id],
+      sql: `UPDATE "User" SET "displayName" = ?, avatar = ?, "preferredCurrency" = ? WHERE id = ?`,
+      args: [displayName.trim(), avatarUri ?? null, preferredCurrency, user.id],
     });
 
     // Actualizar caché local del avatar
@@ -149,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await AsyncStorage.removeItem(AVATAR_KEY + '_' + user.id);
     }
 
-    const updated: AuthUser = { ...user, displayName: displayName.trim(), avatarUri };
+    const updated: AuthUser = { ...user, displayName: displayName.trim(), avatarUri, preferredCurrency };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setUser(updated);
   }, [user]);

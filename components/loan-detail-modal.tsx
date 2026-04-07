@@ -4,6 +4,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useApp } from '@/contexts/app-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCurrency } from '@/hooks/use-currency';
 import type { Card } from '@/types/card';
 import type { Loan, LoanPayment } from '@/types/loan';
 import { LOAN_TYPE_LABELS } from '@/types/loan';
@@ -31,6 +32,7 @@ export function LoanDetailModal({ visible, onClose, loan, cards }: LoanDetailMod
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
   const { getLoanPayments, addLoanPayment, updateLoanPayment, deleteLoanPayment, loans } = useApp();
+  const { formatCurrency } = useCurrency();
 
   const [payments, setPayments] = useState<LoanPayment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,7 +83,7 @@ export function LoanDetailModal({ visible, onClose, loan, cards }: LoanDetailMod
   const handleDeletePayment = (payment: LoanPayment) => {
     Alert.alert(
       'Eliminar Pago',
-      `¿Eliminar el pago de $${payment.amount.toFixed(2)}? La transacción de balance asociada también se eliminará.`,
+      `¿Eliminar el pago de ${formatCurrency(payment.amount)}? La transacción de balance asociada también se eliminará.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -133,7 +135,7 @@ export function LoanDetailModal({ visible, onClose, loan, cards }: LoanDetailMod
         </View>
         <View>
           <Text style={[styles.paymentAmount, { color }]}>
-            ${item.amount.toFixed(2)}
+            {formatCurrency(item.amount)}
           </Text>
           <Text style={[styles.paymentDate, { color: theme.textSecondary }]}>
             {new Date(item.date).toLocaleDateString()}
@@ -190,10 +192,10 @@ export function LoanDetailModal({ visible, onClose, loan, cards }: LoanDetailMod
             <View style={styles.progressSection}>
               <View style={styles.progressLabels}>
                 <Text style={[styles.progressLabel, { color: theme.textSecondary }]}>
-                  Pagado: ${(currentLoan.totalPaid ?? 0).toFixed(2)}
+                  Pagado: {formatCurrency(currentLoan.totalPaid ?? 0)}
                 </Text>
                 <Text style={[styles.progressLabel, { color: theme.textSecondary }]}>
-                  Total: ${currentLoan.amount.toFixed(2)}
+                  Total: {formatCurrency(currentLoan.amount)}
                 </Text>
               </View>
               <View style={[styles.progressBar, { backgroundColor: theme.divider }]}>
@@ -205,7 +207,7 @@ export function LoanDetailModal({ visible, onClose, loan, cards }: LoanDetailMod
                 />
               </View>
               <Text style={[styles.pendingText, { color }]}>
-                {balance > 0 ? `Pendiente: $${balance.toFixed(2)}` : 'Completamente pagado'}
+                {balance > 0 ? `Pendiente: ${formatCurrency(balance)}` : 'Completamente pagado'}
               </Text>
             </View>
           </View>

@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useApp } from '@/contexts/app-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCurrency } from '@/hooks/use-currency';
 import type { Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
@@ -38,6 +39,7 @@ export function AddTransactionModal({
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
   const { categories, getAccountBalance } = useApp();
+  const { formatCurrency } = useCurrency();
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -81,7 +83,7 @@ export function AddTransactionModal({
         ? balance + editingTransaction.amount
         : balance;
       if (parsedAmount > available) {
-        setBalanceError(`Saldo insuficiente. Balance disponible: $${available.toFixed(2)}`);
+        setBalanceError(`Saldo insuficiente. Balance disponible: ${formatCurrency(available)}`);
         return;
       }
     }

@@ -43,20 +43,28 @@ export default function ForgotPasswordScreen() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmedEmail }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Error al enviar la solicitud');
+      let res: Response;
+      try {
+        res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: trimmedEmail }),
+        });
+      } catch {
+        // Network/transport error — let the user retry
+        setError('No se pudo conectar al servidor. Intenta de nuevo.');
+        return;
       }
 
+      if (res.status >= 500) {
+        setError('Error del servidor. Intenta de nuevo más tarde.');
+        return;
+      }
+
+      // For any 2xx/4xx response, show success (don't reveal if user exists)
       setSent(true);
     } catch {
-      // Always show success message for security (don't reveal if user exists)
-      setSent(true);
+      setError('Ocurrió un error inesperado. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }

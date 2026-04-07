@@ -99,9 +99,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    // Leer también el campo `avatar` y `preferredCurrency` de Turso para sincronizarlo
+    // Leer campos del usuario — usar SELECT * para evitar fallos si la columna
+    // preferredCurrency aún no existe (la migración corre después del login)
     const result = await turso.execute({
-      sql: `SELECT id, email, "passwordHash", "displayName", avatar, "preferredCurrency" FROM "User" WHERE email = ? LIMIT 1`,
+      sql: `SELECT * FROM "User" WHERE email = ? LIMIT 1`,
       args: [email.trim().toLowerCase()],
     });
 

@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { CURRENCIES } from '@/contexts/currency-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,18 +18,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const CURRENCIES = [
-  { code: 'MXN', name: 'Peso mexicano', symbol: '$' },
-  { code: 'USD', name: 'Dólar estadounidense', symbol: '$' },
-  { code: 'EUR', name: 'Euro', symbol: '€' },
-  { code: 'ARS', name: 'Peso argentino', symbol: '$' },
-  { code: 'COP', name: 'Peso colombiano', symbol: '$' },
-  { code: 'CLP', name: 'Peso chileno', symbol: '$' },
-  { code: 'PEN', name: 'Sol peruano', symbol: 'S/' },
-  { code: 'BRL', name: 'Real brasileño', symbol: 'R$' },
-  { code: 'GBP', name: 'Libra esterlina', symbol: '£' },
-];
 
 export default function ProfileScreen() {
   const scheme  = useColorScheme() ?? 'light';

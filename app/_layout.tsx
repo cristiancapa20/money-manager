@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { AppProvider } from '@/contexts/app-context';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import { CurrencyProvider } from '@/contexts/currency-context';
 import { AppThemeProvider } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -74,16 +75,18 @@ function RootLayoutContent() {
   const bg = colorScheme === 'dark' ? '#0f172a' : '#f9fafb';
 
   return (
-    <AppProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack screenOptions={{ contentStyle: { backgroundColor: bg } }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="profile" options={{ headerShown: false, animation: 'slide_from_right' }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </AppProvider>
+    <CurrencyProvider>
+      <AppProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack screenOptions={{ contentStyle: { backgroundColor: bg } }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="profile" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </AppProvider>
+    </CurrencyProvider>
   );
 }

@@ -4,6 +4,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useApp } from '@/contexts/app-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCurrency } from '@/hooks/use-currency';
 import type { Subscription } from '@/types/subscription';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
@@ -25,6 +26,7 @@ export default function SubscriptionsScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const { formatCurrency } = useCurrency();
   const {
     subscriptions,
     cards,
@@ -106,7 +108,7 @@ export default function SubscriptionsScreen() {
   const handleDelete = (sub: Subscription) => {
     Alert.alert(
       'Eliminar Suscripción',
-      `¿Eliminar "${sub.name}" ($${sub.amount.toFixed(2)}/mes)?`,
+      `¿Eliminar "${sub.name}" (${formatCurrency(sub.amount)}/mes)?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -156,7 +158,7 @@ export default function SubscriptionsScreen() {
           </View>
           <View style={styles.cardAmounts}>
             <Text style={[styles.cardAmount, { color: theme.expense }]}>
-              ${item.amount.toFixed(2)}
+              {formatCurrency(item.amount)}
             </Text>
             <Text style={[styles.cardFreq, { color: theme.textMuted }]}>/mes</Text>
           </View>
@@ -236,7 +238,7 @@ export default function SubscriptionsScreen() {
           <Ionicons name="wallet-outline" size={20} color={theme.expense} />
           <Text style={[styles.summaryLabel, { color: theme.expense }]}>Total Mensual</Text>
           <Text style={[styles.summaryAmount, { color: theme.expense }]}>
-            ${summary.totalMonthly.toFixed(2)}
+            {formatCurrency(summary.totalMonthly)}
           </Text>
         </View>
       </View>

@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCurrency } from '@/hooks/use-currency';
 import type { Card } from '@/types/card';
 import { useMemo } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
@@ -20,6 +21,7 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
   const isDark = scheme === 'dark';
+  const { formatCurrency, formatCompact } = useCurrency();
 
   // Calcular datos del gráfico
   const { chartData, maxBalance, minBalance, currentBalance } = useMemo(() => {
@@ -166,13 +168,7 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
           textColor={textColor}
           yAxisTextNumberOfLines={1}
           yAxisLabelWidth={50}
-          formatYLabel={(value) => {
-            const num = parseFloat(value);
-            if (num >= 1000) {
-              return `$${(num / 1000).toFixed(1)}k`;
-            }
-            return `$${num.toFixed(0)}`;
-          }}
+          formatYLabel={(value) => formatCompact(parseFloat(value))}
         />
       </View>
 
@@ -184,10 +180,7 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
             styles.balanceValue,
             { color: currentBalance >= 0 ? theme.income : theme.expense },
           ]}>
-          ${currentBalance.toLocaleString('es-MX', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
+          {formatCurrency(currentBalance)}
         </ThemedText>
       </View>
     </ThemedView>

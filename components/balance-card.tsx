@@ -1,4 +1,5 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCurrency } from '@/hooks/use-currency';
 import { Colors } from '@/constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -13,6 +14,7 @@ interface BalanceCardProps {
 export function BalanceCard({ balance, income, expenses, cardName, cardColor }: BalanceCardProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
+  const { formatCurrency } = useCurrency();
   const backgroundColor = cardColor || theme.tint;
 
   return (
@@ -23,7 +25,7 @@ export function BalanceCard({ balance, income, expenses, cardName, cardColor }: 
 
       <View style={styles.cardBody}>
         <Text style={styles.balanceAmount}>
-          ${balance.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {formatCurrency(balance)}
         </Text>
       </View>
 
@@ -31,14 +33,14 @@ export function BalanceCard({ balance, income, expenses, cardName, cardColor }: 
         <View style={styles.cardInfo}>
           <Text style={styles.incomeLabel}>Ingresos</Text>
           <Text style={styles.incomeValue}>
-            ${income.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(income)}
           </Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.cardInfo}>
           <Text style={styles.expenseLabel}>Gastos</Text>
           <Text style={styles.expenseValue}>
-            ${expenses.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(expenses)}
           </Text>
         </View>
       </View>

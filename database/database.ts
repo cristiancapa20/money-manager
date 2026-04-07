@@ -59,6 +59,16 @@ export async function initDatabase(): Promise<void> {
     }
   }
 
+  // Asegurar que la columna preferredCurrency exista en User
+  try {
+    await turso.execute(`ALTER TABLE "User" ADD COLUMN "preferredCurrency" TEXT NOT NULL DEFAULT 'MXN'`);
+  } catch (err: any) {
+    const msg = String(err?.message ?? '').toLowerCase();
+    if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+      throw err;
+    }
+  }
+
   // Asegurar que la tabla Subscription exista
   await turso.execute(`
     CREATE TABLE IF NOT EXISTS "Subscription" (

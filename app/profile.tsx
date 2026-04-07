@@ -18,6 +18,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const CURRENCIES = [
+  { code: 'MXN', name: 'Peso mexicano', symbol: '$' },
+  { code: 'USD', name: 'Dólar estadounidense', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'ARS', name: 'Peso argentino', symbol: '$' },
+  { code: 'COP', name: 'Peso colombiano', symbol: '$' },
+  { code: 'CLP', name: 'Peso chileno', symbol: '$' },
+  { code: 'PEN', name: 'Sol peruano', symbol: 'S/' },
+  { code: 'BRL', name: 'Real brasileño', symbol: 'R$' },
+  { code: 'GBP', name: 'Libra esterlina', symbol: '£' },
+];
+
 export default function ProfileScreen() {
   const scheme  = useColorScheme() ?? 'light';
   const theme   = Colors[scheme];
@@ -25,16 +37,18 @@ export default function ProfileScreen() {
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
 
-  const [displayName, setDisplayName] = useState(user?.displayName ?? '');
-  const [avatarUri,   setAvatarUri]   = useState<string | null>(user?.avatarUri ?? null);
-  const [saving,      setSaving]      = useState(false);
-  const [editing,     setEditing]     = useState(false);
+  const [displayName,       setDisplayName]       = useState(user?.displayName ?? '');
+  const [avatarUri,         setAvatarUri]         = useState<string | null>(user?.avatarUri ?? null);
+  const [preferredCurrency, setPreferredCurrency] = useState(user?.preferredCurrency ?? 'MXN');
+  const [saving,            setSaving]            = useState(false);
+  const [editing,           setEditing]           = useState(false);
 
   useEffect(() => {
     setDisplayName(user?.displayName ?? '');
     setAvatarUri(user?.avatarUri ?? null);
+    setPreferredCurrency(user?.preferredCurrency ?? 'MXN');
     setEditing(false);
-  }, [user?.displayName, user?.avatarUri]);
+  }, [user?.displayName, user?.avatarUri, user?.preferredCurrency]);
 
   /* ─── Foto ─── */
   /** Convierte el resultado del picker a una data URL base64 sincronizable con Turso */
@@ -101,7 +115,7 @@ export default function ProfileScreen() {
     if (!displayName.trim()) return;
     try {
       setSaving(true);
-      await updateProfile(displayName.trim(), avatarUri);
+      await updateProfile(displayName.trim(), avatarUri, preferredCurrency);
       setEditing(false);
     } catch {
       Alert.alert('Error', 'No se pudo guardar el perfil');
@@ -225,6 +239,42 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* ── Sección: preferencias ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>PREFERENCIAS</Text>
+
+          <View style={[styles.fieldCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.currencyLabel, { color: theme.textSecondary }]}>Moneda preferida</Text>
+            <View style={styles.currencyGrid}>
+              {CURRENCIES.map((c) => {
+                const selected = preferredCurrency === c.code;
+                return (
+                  <TouchableOpacity
+                    key={c.code}
+                    style={[
+                      styles.currencyChip,
+                      {
+                        backgroundColor: selected ? theme.tint : theme.background,
+                        borderColor: selected ? theme.tint : theme.border,
+                      },
+                    ]}
+                    onPress={() => { setPreferredCurrency(c.code); setEditing(true); }}
+                    activeOpacity={0.7}>
+                    <Text style={[styles.currencyCode, { color: selected ? '#fff' : theme.text }]}>
+                      {c.symbol} {c.code}
+                    </Text>
+                    <Text
+                      style={[styles.currencyName, { color: selected ? 'rgba(255,255,255,0.8)' : theme.textSecondary }]}
+                      numberOfLines={1}>
+                      {c.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
         {/* ── Guardar cambios ── */}
         {editing && (
           <TouchableOpacity
@@ -343,6 +393,40 @@ const styles = StyleSheet.create({
   },
   fieldValue: { fontSize: 15, fontWeight: '500', paddingVertical: 2 },
   divider: { height: 1, marginHorizontal: 16 },
+
+  /* Currency */
+  currencyLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 8,
+  },
+  currencyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  currencyChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    minWidth: 90,
+  },
+  currencyCode: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  currencyName: {
+    fontSize: 11,
+    fontWeight: '400',
+    marginTop: 1,
+  },
 
   /* Save */
   saveBtn: {

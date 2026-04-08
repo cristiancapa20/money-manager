@@ -1,5 +1,6 @@
 import { BalanceChart } from '@/components/balance-chart';
 import { CategoryBreakdown } from '@/components/category-breakdown';
+import { DailyChart } from '@/components/daily-chart';
 import { MonthlySummary } from '@/components/monthly-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -99,6 +100,11 @@ export default function StatsScreen() {
               monthLabel={monthLabel}
               onPrevMonth={handlePrevMonth}
               onNextMonth={handleNextMonth}
+            />
+            <DailyChart
+              transactions={cardTransactions}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
             />
             <CategoryBreakdown transactions={monthlyTransactions} />
 <BalanceChart transactions={cardTransactions} cards={selectedCards} />

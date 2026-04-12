@@ -9,7 +9,11 @@ let _notifications: NotificationsModule | null = null;
 async function getNotifications(): Promise<NotificationsModule | null> {
   if (Platform.OS === 'web' && typeof window === 'undefined') return null;
   if (!_notifications) {
-    _notifications = await import('expo-notifications');
+    try {
+      _notifications = await import('expo-notifications');
+    } catch {
+      return null;
+    }
   }
   return _notifications;
 }

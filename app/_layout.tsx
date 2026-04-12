@@ -1,16 +1,20 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as Linking from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { OnboardingModal } from '@/components/onboarding-modal';
 import { AppProvider } from '@/contexts/app-context';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { CurrencyProvider } from '@/contexts/currency-context';
 import { AppThemeProvider } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+const ONBOARDING_KEY = 'costos_onboarding_complete';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -33,6 +37,7 @@ function RootLayoutContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Deep linking — redirige costos://reset-password?token=xxx
   useEffect(() => {
@@ -69,6 +74,21 @@ function RootLayoutContent() {
     }
   }, [user, isLoading, segments]);
 
+  // Verificar si el usuario necesita onboarding
+  useEffect(() => {
+    if (!user || isLoading) return;
+    (async () => {
+      const done = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${user.id}`);
+      if (!done) setShowOnboarding(true);
+    })();
+  }, [user, isLoading]);
+
+  const handleOnboardingComplete = useCallback(async () => {
+    if (!user) return;
+    await AsyncStorage.setItem(`${ONBOARDING_KEY}_${user.id}`, '1');
+    setShowOnboarding(false);
+  }, [user]);
+
   if (isLoading) return null;
 
   // Colores de fondo según tema — evita el flash blanco en transiciones del Stack
@@ -85,6 +105,7 @@ function RootLayoutContent() {
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />
+          <OnboardingModal visible={showOnboarding} onComplete={handleOnboardingComplete} />
         </ThemeProvider>
       </AppProvider>
     </CurrencyProvider>

@@ -92,10 +92,12 @@ export function MonthlyTrendsChart({ accountId }: MonthlyTrendsChartProps) {
       const dayMax = Math.max(income, expense);
       if (dayMax > max) max = dayMax;
 
+      // Normalize month to 0-based index (API may return 1-12)
+      const monthIdx = m.month >= 1 && m.month <= 12 ? m.month - 1 : m.month;
       const label =
         range <= 6
-          ? SHORT_MONTH_NAMES[m.month]
-          : `${SHORT_MONTH_NAMES[m.month]} ${String(m.year).slice(2)}`;
+          ? SHORT_MONTH_NAMES[monthIdx]
+          : `${SHORT_MONTH_NAMES[monthIdx]} ${String(m.year).slice(2)}`;
 
       // Income bar
       data.push({

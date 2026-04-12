@@ -11,7 +11,11 @@ let _handlerSet = false;
 async function getNotifications(): Promise<NotificationsModule | null> {
   if (Platform.OS === 'web' && typeof window === 'undefined') return null;
   if (!_notifications) {
-    _notifications = await import('expo-notifications');
+    try {
+      _notifications = await import('expo-notifications');
+    } catch {
+      return null;
+    }
     if (!_handlerSet) {
       _handlerSet = true;
       _notifications.setNotificationHandler({

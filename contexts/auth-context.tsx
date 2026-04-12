@@ -1,5 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as bcrypt from 'bcryptjs';
+
+bcrypt.setRandomFallback((len: number) => {
+  const buf = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    buf[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(buf);
+});
 import {
   createContext,
   ReactNode,
@@ -79,7 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Crear usuario
     const id = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const passwordHash = await bcrypt.hash(password, 10);
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync(password, salt);
 
     await turso.execute({
       sql: `INSERT INTO "User" (id, email, "passwordHash") VALUES (?, ?, ?)`,
@@ -110,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const row   = result.rows[0];
     const hash  = String(row.passwordHash);
-    const valid = await bcrypt.compare(password, hash);
+    const valid = bcrypt.compareSync(password, hash);
     if (!valid) throw new Error('Contraseña incorrecta');
 
     const userId = String(row.id);

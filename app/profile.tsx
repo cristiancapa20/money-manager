@@ -228,6 +228,21 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* ── Categorías ── */}
+        <TouchableOpacity
+          style={[styles.navCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+          onPress={() => router.push('/(tabs)/categories')}
+          activeOpacity={0.8}>
+          <View style={[styles.navIcon, { backgroundColor: theme.tintLight }]}>
+            <Ionicons name="pricetags-outline" size={18} color={theme.tint} />
+          </View>
+          <View style={styles.navBody}>
+            <Text style={[styles.navTitle, { color: theme.text }]}>Categorias</Text>
+            <Text style={[styles.navHint, { color: theme.textSecondary }]}>Gestionar categorias de gastos</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+        </TouchableOpacity>
+
         {/* ── Sección: preferencias ── */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>PREFERENCIAS</Text>
@@ -416,6 +431,26 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginTop: 1,
   },
+
+  /* Nav cards */
+  navCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  navIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navBody: { flex: 1, gap: 2 },
+  navTitle: { fontSize: 14, fontWeight: '700' },
+  navHint: { fontSize: 12 },
 
   /* Save */
   saveBtn: {

@@ -12,7 +12,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Card } from '@/types/card';
 import type { Transaction } from '@/types/transaction';
 import { ThemeSwitch } from '@/components/theme-switch';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -131,12 +130,6 @@ export default function HomeScreen() {
         <View style={styles.headerRight}>
           <ThemeSwitch />
           <TouchableOpacity
-            style={[styles.settingsBtn, { backgroundColor: theme.tintLight }]}
-            onPress={() => router.push('/(tabs)/settings')}
-            activeOpacity={0.8}>
-            <Ionicons name="settings-outline" size={20} color={theme.tint} />
-          </TouchableOpacity>
-          <TouchableOpacity
             style={[styles.avatarBtn, { borderColor: theme.tintBorder }]}
             onPress={() => router.push('/profile')}
             activeOpacity={0.8}>
@@ -217,13 +210,6 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 13, fontWeight: '500' },
   userName: { fontSize: 20, fontWeight: '700', marginTop: 1 },
 
-  settingsBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
   // Avatar
   avatarBtn: {
     position: 'relative',

@@ -7,11 +7,13 @@ import type { Card } from '@/types/card';
 import type { Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
-import { LineChart } from 'react-native-gifted-charts';
+import { StyleSheet, View } from 'react-native';
+import { CartesianChart, Line, Area } from 'victory-native';
+import { useFont, LinearGradient, vec } from '@shopify/react-native-skia';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHART_WIDTH = SCREEN_WIDTH - 64;
+const CHART_FONT = require('@/assets/fonts/Roboto-Medium.ttf');
+
+const CHART_HEIGHT = 200;
 
 type Period = '1M' | '3M' | '6M' | '1Y' | 'ALL';
 
@@ -36,21 +38,27 @@ interface BalanceChartProps {
   cards: Card[];
 }
 
+interface BalanceDataPoint {
+  index: number;
+  balance: number;
+  label: string;
+}
+
 export function BalanceChart({ transactions, cards }: BalanceChartProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const { formatCurrency, formatCompact } = useCurrency();
+  const { formatCurrency } = useCurrency();
   const [period, setPeriod] = useState<Period>('3M');
+  const font = useFont(CHART_FONT, 10);
 
-  const { chartData, maxBalance, currentBalance, changeAmount, changePercent } = useMemo(() => {
+  const { chartData, currentBalance, changeAmount, changePercent } = useMemo(() => {
     if (transactions.length === 0) {
-      return { chartData: [], maxBalance: 0, currentBalance: 0, changeAmount: 0, changePercent: 0 };
+      return { chartData: [], currentBalance: 0, changeAmount: 0, changePercent: 0 };
     }
 
     const initialBalance = cards.reduce((sum, card) => sum + card.initialBalance, 0);
     const startDate = getStartDateForPeriod(period);
 
-    // Group all transactions by date to compute running balance
     const byDate = new Map<string, { income: number; expense: number }>();
 
     const sorted = [...transactions].sort((a, b) => {
@@ -63,7 +71,6 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
       const d = new Date(t.date || t.createdAt);
       if (isNaN(d.getTime())) return;
       const key = d.toISOString().split('T')[0];
-
       if (!byDate.has(key)) byDate.set(key, { income: 0, expense: 0 });
       const day = byDate.get(key)!;
       if (t.type === 'INCOME') day.income += t.amount;
@@ -72,10 +79,9 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
 
     const allDates = Array.from(byDate.keys()).sort();
     if (allDates.length === 0) {
-      return { chartData: [], maxBalance: 0, currentBalance: 0, changeAmount: 0, changePercent: 0 };
+      return { chartData: [], currentBalance: 0, changeAmount: 0, changePercent: 0 };
     }
 
-    // Compute full running balance series
     let running = initialBalance;
     const fullSeries: { date: string; balance: number }[] = [];
 
@@ -85,16 +91,14 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
       fullSeries.push({ date: dateKey, balance: running });
     });
 
-    // Filter to period
     const filtered = startDate
       ? fullSeries.filter((p) => new Date(p.date) >= startDate)
       : fullSeries;
 
     if (filtered.length === 0) {
-      return { chartData: [], maxBalance: 0, currentBalance: 0, changeAmount: 0, changePercent: 0 };
+      return { chartData: [], currentBalance: 0, changeAmount: 0, changePercent: 0 };
     }
 
-    // Downsample if too many points (keep max ~30 for readability)
     const MAX_POINTS = 30;
     const sampled =
       filtered.length <= MAX_POINTS
@@ -104,7 +108,7 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
             return i % step === 0 || i === filtered.length - 1;
           });
 
-    const dataPoints = sampled.map((p, i) => {
+    const dataPoints: BalanceDataPoint[] = sampled.map((p, i) => {
       const d = new Date(p.date);
       const showLabel =
         sampled.length <= 7 ||
@@ -113,15 +117,13 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
         i % Math.ceil(sampled.length / 5) === 0;
 
       return {
-        value: p.balance,
+        index: i,
+        balance: p.balance,
         label: showLabel ? `${d.getDate()}/${d.getMonth() + 1}` : '',
-        labelTextStyle: { color: theme.textMuted, fontSize: 9 },
-        dataPointLabelComponent: () => null as any,
       };
     });
 
-    const balances = dataPoints.map((d) => d.value);
-    const max = Math.max(...balances);
+    const balances = dataPoints.map((d) => d.balance);
     const current = balances[balances.length - 1] ?? initialBalance;
     const start = balances[0] ?? initialBalance;
     const change = current - start;
@@ -129,27 +131,25 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
 
     return {
       chartData: dataPoints,
-      maxBalance: max,
       currentBalance: current,
       changeAmount: change,
       changePercent: pct,
     };
-  }, [transactions, cards, theme, period]);
+  }, [transactions, cards, period]);
 
   const lineColor = theme.tint;
-  const gridColor = theme.border;
   const isPositiveChange = changeAmount >= 0;
 
   if (chartData.length === 0) {
     return (
-      <ThemedView style={[styles.container, { borderColor: theme.border }]}>
+      <ThemedView style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <ThemedText type="subtitle" style={styles.title}>
-          Gráfica de Balance
+          Grafica de Balance
         </ThemedText>
         <View style={styles.emptyChart}>
           <Ionicons name="analytics-outline" size={48} color={theme.textMuted} />
           <ThemedText style={[styles.emptyText, { marginTop: 12 }]}>
-            No hay suficientes datos para mostrar la gráfica
+            No hay suficientes datos para mostrar la grafica
           </ThemedText>
         </View>
       </ThemedView>
@@ -157,11 +157,11 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
   }
 
   return (
-    <ThemedView style={[styles.container, { borderColor: theme.border }]}>
+    <ThemedView style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <View style={styles.headerRow}>
         <View>
           <ThemedText type="subtitle" style={styles.title}>
-            Gráfica de Balance
+            Grafica de Balance
           </ThemedText>
           <ThemedText
             style={[
@@ -215,78 +215,46 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
       </View>
 
       <View style={styles.chartContainer}>
-        <LineChart
+        <CartesianChart
           data={chartData}
-          height={180}
-          width={CHART_WIDTH}
-          spacing={chartData.length > 1 ? (CHART_WIDTH - 60) / (chartData.length - 1) : 0}
-          thickness={2.5}
-          color={lineColor}
-          hideRules={false}
-          rulesType="dashed"
-          rulesColor={gridColor}
-          rulesThickness={0.5}
-          dashWidth={4}
-          dashGap={4}
-          initialSpacing={20}
-          endSpacing={20}
-          yAxisColor="transparent"
-          xAxisColor={gridColor}
-          yAxisTextStyle={{ color: theme.textMuted, fontSize: 9 }}
-          xAxisLabelTextStyle={{ color: theme.textMuted, fontSize: 9 }}
-          maxValue={maxBalance * 1.15}
-          noOfSections={4}
-          curved
-          areaChart
-          startFillColor={lineColor}
-          endFillColor={`${theme.tint}10`}
-          startOpacity={0.3}
-          endOpacity={0.05}
-          hideDataPoints={chartData.length > 15}
-          dataPointsColor={lineColor}
-          dataPointsRadius={3}
-          focusEnabled
-          showStripOnFocus
-          stripColor={gridColor}
-          stripWidth={1}
-          showTextOnFocus
-          unFocusOnPressOut
-          focusedDataPointColor={lineColor}
-          focusedDataPointRadius={5}
-          delayBeforeUnFocus={2000}
-          textShiftY={-14}
-          textShiftX={-15}
-          textFontSize={10}
-          textColor={theme.text}
-          yAxisTextNumberOfLines={1}
-          yAxisLabelWidth={50}
-          formatYLabel={(value) => formatCompact(parseFloat(value))}
-          pointerConfig={{
-            pointerStripColor: gridColor,
-            pointerStripWidth: 1,
-            pointerColor: lineColor,
-            radius: 5,
-            pointerLabelWidth: 120,
-            pointerLabelHeight: 40,
-            pointerLabelComponent: (items: any) => {
-              const val = items?.[0]?.value ?? 0;
-              return (
-                <View
-                  style={[
-                    styles.tooltip,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor: theme.border,
-                    },
-                  ]}>
-                  <ThemedText style={styles.tooltipText}>
-                    {formatCurrency(val)}
-                  </ThemedText>
-                </View>
-              );
+          xKey="index"
+          yKeys={['balance']}
+          domainPadding={{ top: 20, bottom: 5 }}
+          axisOptions={{
+            font,
+            tickCount: { x: 5, y: 4 },
+            labelColor: theme.textMuted,
+            lineColor: theme.border,
+            formatXLabel: (val) => {
+              const point = chartData.find((d) => d.index === val);
+              return point?.label ?? '';
             },
           }}
-        />
+        >
+          {({ points, chartBounds }) => (
+            <>
+              <Area
+                points={points.balance}
+                y0={chartBounds.bottom}
+                animate={{ type: 'spring' }}
+                curveType="natural"
+              >
+                <LinearGradient
+                  start={vec(0, chartBounds.top)}
+                  end={vec(0, chartBounds.bottom)}
+                  colors={[`${lineColor}40`, `${lineColor}05`]}
+                />
+              </Area>
+              <Line
+                points={points.balance}
+                color={lineColor}
+                strokeWidth={2.5}
+                animate={{ type: 'spring' }}
+                curveType="natural"
+              />
+            </>
+          )}
+        </CartesianChart>
       </View>
     </ThemedView>
   );
@@ -303,6 +271,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -349,10 +318,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   chartContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    height: 220,
+    height: CHART_HEIGHT,
   },
   emptyChart: {
     height: 200,
@@ -363,20 +329,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.6,
     textAlign: 'center',
-  },
-  tooltip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  tooltipText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
 });

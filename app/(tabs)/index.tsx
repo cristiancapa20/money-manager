@@ -1,7 +1,6 @@
 import { AddCardModal } from '@/components/add-card-modal';
 import { AddTransactionModal } from '@/components/add-transaction-modal';
 import { CardCarousel } from '@/components/card-carousel';
-import { CardSelector } from '@/components/card-selector';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TransactionList } from '@/components/transaction-list';
@@ -13,7 +12,7 @@ import type { Card } from '@/types/card';
 import type { Transaction } from '@/types/transaction';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
@@ -49,6 +48,19 @@ export default function HomeScreen() {
   }, [selectedCardId, cards]);
 
   const selectedCard = cards[selectedCardIndex];
+
+  const handleCardChange = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < cards.length) {
+        setSelectedCardId(cards[index].id);
+      }
+    },
+    [cards, setSelectedCardId],
+  );
+
+  const handleOpenCardModal = useCallback(() => {
+    setCardModalVisible(true);
+  }, []);
 
   const cardTransactions = selectedCard
     ? transactions.filter((t) => t.accountId === selectedCard.id)
@@ -144,13 +156,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <CardSelector
-        cards={cards}
-        selectedCardId={selectedCardId}
-        onSelectCard={setSelectedCardId}
-        onAddCard={() => setCardModalVisible(true)}
-      />
-
       <TransactionList
         transactions={cardTransactions}
         balanceCard={
@@ -158,12 +163,11 @@ export default function HomeScreen() {
             <CardCarousel
               cards={cards}
               selectedCardIndex={selectedCardIndex}
-              onCardChange={(index) => {
-                if (index >= 0 && index < cards.length) setSelectedCardId(cards[index].id);
-              }}
+              onCardChange={handleCardChange}
               transactions={transactions}
               onDeleteCard={deleteCard}
               onEditCard={handleEditCard}
+              onAddCard={handleOpenCardModal}
             />
           ) : null
         }

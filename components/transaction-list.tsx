@@ -6,7 +6,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCurrency } from '@/hooks/use-currency';
 import type { Category, Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 type TypeFilter = 'ALL' | 'INCOME' | 'EXPENSE';
@@ -98,58 +98,61 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
     setCustomTo('');
   };
 
-  const ListHeaderComponent = () => (
-    <View style={styles.headerContainer}>
-      {balanceCard}
-      {balanceCard && transactions.length > 0 && (
-        <>
-          <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Transacciones</ThemedText>
-            <View style={[styles.countBadge, { backgroundColor: theme.tintLight }]}>
-              <Text style={[styles.countText, { color: theme.tint }]}>{filteredAndSorted.length}</Text>
+  const listHeader = useMemo(
+    () => (
+      <View style={styles.headerContainer}>
+        {balanceCard}
+        {balanceCard && transactions.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>Transacciones</ThemedText>
+              <View style={[styles.countBadge, { backgroundColor: theme.tintLight }]}>
+                <Text style={[styles.countText, { color: theme.tint }]}>{filteredAndSorted.length}</Text>
+              </View>
+              <View style={{ flex: 1 }} />
+              <TouchableOpacity
+                style={[
+                  styles.filterToggle,
+                  { backgroundColor: hasActiveFilters ? theme.tint : theme.tintLight },
+                ]}
+                onPress={() => setFiltersVisible((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="filter"
+                  size={14}
+                  color={hasActiveFilters ? '#fff' : theme.tint}
+                />
+                <Text style={[styles.filterToggleText, { color: hasActiveFilters ? '#fff' : theme.tint }]}>
+                  Filtros
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={{ flex: 1 }} />
-            <TouchableOpacity
-              style={[
-                styles.filterToggle,
-                { backgroundColor: hasActiveFilters ? theme.tint : theme.tintLight },
-              ]}
-              onPress={() => setFiltersVisible((v) => !v)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="filter"
-                size={14}
-                color={hasActiveFilters ? '#fff' : theme.tint}
-              />
-              <Text style={[styles.filterToggleText, { color: hasActiveFilters ? '#fff' : theme.tint }]}>
-                Filtros
-              </Text>
-            </TouchableOpacity>
-          </View>
 
-          {filtersVisible && (
-            <FilterPanel
-              theme={theme}
-              scheme={scheme}
-              categories={categories}
-              typeFilter={typeFilter}
-              setTypeFilter={setTypeFilter}
-              categoryFilter={categoryFilter}
-              setCategoryFilter={setCategoryFilter}
-              datePreset={datePreset}
-              setDatePreset={setDatePreset}
-              customFrom={customFrom}
-              setCustomFrom={setCustomFrom}
-              customTo={customTo}
-              setCustomTo={setCustomTo}
-              hasActiveFilters={hasActiveFilters}
-              clearFilters={clearFilters}
-            />
-          )}
-        </>
-      )}
-    </View>
+            {filtersVisible && (
+              <FilterPanel
+                theme={theme}
+                scheme={scheme}
+                categories={categories}
+                typeFilter={typeFilter}
+                setTypeFilter={setTypeFilter}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                datePreset={datePreset}
+                setDatePreset={setDatePreset}
+                customFrom={customFrom}
+                setCustomFrom={setCustomFrom}
+                customTo={customTo}
+                setCustomTo={setCustomTo}
+                hasActiveFilters={hasActiveFilters}
+                clearFilters={clearFilters}
+              />
+            )}
+          </>
+        )}
+      </View>
+    ),
+    [balanceCard, transactions.length, filteredAndSorted.length, theme, hasActiveFilters, filtersVisible, categories, typeFilter, categoryFilter, datePreset, customFrom, customTo, scheme, clearFilters],
   );
 
   const ListEmptyComponent = () => (
@@ -182,7 +185,7 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
         renderItem={({ item }) => (
           <TransactionItem transaction={item} onEdit={onEditTransaction} />
         )}
-        ListHeaderComponent={ListHeaderComponent}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={ListEmptyComponent}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}

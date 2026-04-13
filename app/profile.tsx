@@ -226,7 +226,7 @@ export default function ProfileScreen() {
         {/* ── Categorías ── */}
         <TouchableOpacity
           style={[styles.navCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-          onPress={() => router.push('/(tabs)/categories')}
+          onPress={() => router.push('/categories')}
           activeOpacity={0.8}>
           <View style={[styles.navIcon, { backgroundColor: theme.tintLight }]}>
             <Ionicons name="pricetags-outline" size={18} color={theme.tint} />

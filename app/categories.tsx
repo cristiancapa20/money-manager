@@ -8,8 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   Alert,
-  FlatList,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -84,7 +84,7 @@ export default function CategoriesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <BackButton />
-        <ThemedText type="title" style={styles.headerTitle}>Categorías</ThemedText>
+        <ThemedText type="title" style={styles.headerTitle}>Categorias</ThemedText>
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
           style={[styles.addBtn, { backgroundColor: theme.tint }]}>
@@ -92,33 +92,30 @@ export default function CategoriesScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Category List */}
-      <FlatList
-        data={categories}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={[styles.row, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <View style={[styles.iconCircle, { backgroundColor: item.color + '20' }]}>
-              <Ionicons name={item.icon as any} size={22} color={item.color} />
+      {/* Category Grid */}
+      <ScrollView
+        contentContainerStyle={styles.grid}
+        showsVerticalScrollIndicator={false}>
+        {categories.map((cat) => (
+          <TouchableOpacity
+            key={cat.id}
+            style={[styles.categoryButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+            onLongPress={() => {
+              if (!cat.isSystem) handleDelete(cat.id, cat.name);
+            }}
+            activeOpacity={0.7}>
+            <View style={[styles.categoryIconContainer, { backgroundColor: cat.color + '20' }]}>
+              <Ionicons name={cat.icon as any} size={22} color={cat.color} />
             </View>
-            <View style={styles.rowInfo}>
-              <Text style={[styles.rowName, { color: theme.text }]}>{item.name}</Text>
-              {item.isSystem && (
-                <Text style={[styles.badge, { color: theme.textMuted }]}>Sistema</Text>
-              )}
-            </View>
-            {!item.isSystem && (
-              <TouchableOpacity
-                onPress={() => handleDelete(item.id, item.name)}
-                hitSlop={12}>
-                <Ionicons name="trash-outline" size={20} color={theme.expense} />
-              </TouchableOpacity>
+            <Text style={[styles.categoryName, { color: theme.text }]} numberOfLines={1}>
+              {cat.name}
+            </Text>
+            {cat.isSystem && (
+              <Text style={[styles.badge, { color: theme.textMuted }]}>Sistema</Text>
             )}
-          </View>
-        )}
-      />
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* Create Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
@@ -221,15 +218,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  list: { paddingHorizontal: 20, paddingBottom: 120, gap: 10 },
-  row: {
+  grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  categoryButton: {
+    width: '30%',
+    minWidth: 88,
     alignItems: 'center',
-    padding: 14,
+    padding: 10,
     borderRadius: 14,
     borderWidth: 1,
-    gap: 12,
   },
+  categoryIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  categoryName: { fontSize: 11, textAlign: 'center', fontWeight: '600' },
+  badge: { fontSize: 10, marginTop: 2 },
   iconCircle: {
     width: 40,
     height: 40,
@@ -237,9 +250,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rowInfo: { flex: 1, gap: 2 },
-  rowName: { fontSize: 15, fontWeight: '600' },
-  badge: { fontSize: 12 },
   // Modal
   overlay: {
     flex: 1,

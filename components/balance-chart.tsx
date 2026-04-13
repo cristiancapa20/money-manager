@@ -39,7 +39,6 @@ interface BalanceChartProps {
 export function BalanceChart({ transactions, cards }: BalanceChartProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const isDark = scheme === 'dark';
   const { formatCurrency, formatCompact } = useCurrency();
   const [period, setPeriod] = useState<Period>('3M');
 
@@ -116,7 +115,7 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
       return {
         value: p.balance,
         label: showLabel ? `${d.getDate()}/${d.getMonth() + 1}` : '',
-        labelTextStyle: { color: isDark ? '#999' : '#666', fontSize: 9 },
+        labelTextStyle: { color: theme.textMuted, fontSize: 9 },
         dataPointLabelComponent: () => null as any,
       };
     });
@@ -135,9 +134,9 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
       changeAmount: change,
       changePercent: pct,
     };
-  }, [transactions, cards, isDark, period]);
+  }, [transactions, cards, theme, period]);
 
-  const lineColor = isDark ? '#818cf8' : '#4f46e5';
+  const lineColor = theme.tint;
   const gridColor = theme.border;
   const isPositiveChange = changeAmount >= 0;
 
@@ -233,14 +232,14 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
           endSpacing={20}
           yAxisColor="transparent"
           xAxisColor={gridColor}
-          yAxisTextStyle={{ color: isDark ? '#999' : '#666', fontSize: 9 }}
-          xAxisLabelTextStyle={{ color: isDark ? '#999' : '#666', fontSize: 9 }}
+          yAxisTextStyle={{ color: theme.textMuted, fontSize: 9 }}
+          xAxisLabelTextStyle={{ color: theme.textMuted, fontSize: 9 }}
           maxValue={maxBalance * 1.15}
           noOfSections={4}
           curved
           areaChart
           startFillColor={lineColor}
-          endFillColor={isDark ? '#4f46e510' : '#4f46e508'}
+          endFillColor={`${theme.tint}10`}
           startOpacity={0.3}
           endOpacity={0.05}
           hideDataPoints={chartData.length > 15}
@@ -276,7 +275,7 @@ export function BalanceChart({ transactions, cards }: BalanceChartProps) {
                   style={[
                     styles.tooltip,
                     {
-                      backgroundColor: isDark ? '#1e293b' : '#fff',
+                      backgroundColor: theme.card,
                       borderColor: theme.border,
                     },
                   ]}>

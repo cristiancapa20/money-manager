@@ -215,7 +215,7 @@ export function AddTransactionModal({
                       <Text
                         style={[
                           styles.catText,
-                          { color: scheme === 'dark' ? '#FFFFFF' : '#000000', fontWeight: selected ? '700' : '600' },
+                          { color: theme.text, fontWeight: selected ? '700' : '600' },
                         ]}
                         numberOfLines={1}>
                         {cat.name}
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   typeBtnText: { fontSize: 15, fontWeight: '600' },
   input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15 },
   textArea: { height: 72, textAlignVertical: 'top' },
-  errorText: { color: '#EF4444', fontSize: 13, marginTop: 6 },
+  errorText: { color: '#f87171', fontSize: 13, marginTop: 6 },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
   catBtn: { width: '30%', minWidth: 88, alignItems: 'center', padding: 10, borderRadius: 14, borderWidth: 1.5 },
   catIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },

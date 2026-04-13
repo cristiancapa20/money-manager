@@ -41,7 +41,6 @@ interface MonthlyTrendsChartProps {
 export function MonthlyTrendsChart({ accountId }: MonthlyTrendsChartProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const isDark = scheme === 'dark';
   const { formatCurrency, formatCompact } = useCurrency();
   const { user } = useAuth();
   const [range, setRange] = useState<MonthRange>(6);
@@ -103,7 +102,7 @@ export function MonthlyTrendsChart({ accountId }: MonthlyTrendsChartProps) {
       data.push({
         value: income,
         label,
-        labelTextStyle: { color: isDark ? '#999' : '#666', fontSize: 9 },
+        labelTextStyle: { color: theme.textMuted, fontSize: 9 },
         frontColor: theme.income,
         spacing: 2,
       });
@@ -117,7 +116,7 @@ export function MonthlyTrendsChart({ accountId }: MonthlyTrendsChartProps) {
     });
 
     return { chartData: data, maxValue: max };
-  }, [monthlyData, range, isDark, theme]);
+  }, [monthlyData, range, theme]);
 
   const { totalIncome, totalExpenses } = useMemo(() => {
     let income = 0;
@@ -205,8 +204,8 @@ export function MonthlyTrendsChart({ accountId }: MonthlyTrendsChartProps) {
               maxValue={maxValue * 1.15 || 100}
               yAxisColor="transparent"
               xAxisColor={theme.border}
-              yAxisTextStyle={{ color: isDark ? '#999' : '#666', fontSize: 9 }}
-              xAxisLabelTextStyle={{ color: isDark ? '#999' : '#666', fontSize: 9 }}
+              yAxisTextStyle={{ color: theme.textMuted, fontSize: 9 }}
+              xAxisLabelTextStyle={{ color: theme.textMuted, fontSize: 9 }}
               hideRules={false}
               rulesType="dashed"
               rulesColor={theme.border}

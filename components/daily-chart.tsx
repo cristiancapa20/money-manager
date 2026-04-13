@@ -21,7 +21,6 @@ interface DailyChartProps {
 export function DailyChart({ transactions, selectedMonth, selectedYear }: DailyChartProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const isDark = scheme === 'dark';
   const { formatCurrency, formatCompact } = useCurrency();
 
   const { chartData, maxValue, totalIncome, totalExpenses } = useMemo(() => {
@@ -62,7 +61,7 @@ export function DailyChart({ transactions, selectedMonth, selectedYear }: DailyC
       data.push({
         value: day.income,
         label: showLabel ? `${dayNum}` : '',
-        labelTextStyle: { color: isDark ? '#999' : '#666', fontSize: 8 },
+        labelTextStyle: { color: theme.textMuted, fontSize: 8 },
         frontColor: theme.income,
         spacing: 1,
       });
@@ -81,7 +80,7 @@ export function DailyChart({ transactions, selectedMonth, selectedYear }: DailyC
       totalIncome: incomeSum,
       totalExpenses: expenseSum,
     };
-  }, [transactions, selectedMonth, selectedYear, isDark, theme]);
+  }, [transactions, selectedMonth, selectedYear, theme]);
 
   const hasData = totalIncome > 0 || totalExpenses > 0;
 
@@ -133,8 +132,8 @@ export function DailyChart({ transactions, selectedMonth, selectedYear }: DailyC
           maxValue={maxValue * 1.15 || 100}
           yAxisColor="transparent"
           xAxisColor={theme.border}
-          yAxisTextStyle={{ color: isDark ? '#999' : '#666', fontSize: 9 }}
-          xAxisLabelTextStyle={{ color: isDark ? '#999' : '#666', fontSize: 8 }}
+          yAxisTextStyle={{ color: theme.textMuted, fontSize: 9 }}
+          xAxisLabelTextStyle={{ color: theme.textMuted, fontSize: 8 }}
           hideRules={false}
           rulesType="dashed"
           rulesColor={theme.border}

@@ -90,14 +90,14 @@ export const Colors = {
   dark: {
     // Texto
     text:          '#f1f5f9',
-    textSecondary: Palette.gray400,
-    textMuted:     Palette.gray500,
+    textSecondary: Palette.gray300,
+    textMuted:     Palette.gray400,
 
     // Fondos
     background:    '#0f172a',
     card:          Palette.gray800,
     input:         Palette.gray800,
-    inputBorder:   Palette.gray700,
+    inputBorder:   Palette.gray600,
 
     // Primario
     tint:            Palette.indigo400,
@@ -105,16 +105,16 @@ export const Colors = {
     tintBorder:      Palette.indigo500,
 
     // Iconos
-    icon:            Palette.gray400,
-    tabIconDefault:  Palette.gray500,
+    icon:            Palette.gray300,
+    tabIconDefault:  Palette.gray400,
     tabIconSelected: Palette.indigo400,
 
     // Nav
     navBackground:   Palette.gray900,
 
     // Separadores
-    border:          Palette.gray700,
-    divider:         Palette.gray800,
+    border:          Palette.gray600,
+    divider:         Palette.gray700,
 
     // Transacciones
     income:          '#4ade80',

@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/back-button';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
@@ -76,6 +77,11 @@ export default function ForgotPasswordScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.container}>
+          {/* Back */}
+          <View style={styles.backWrap}>
+            <BackButton />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={[styles.logoContainer, { backgroundColor: theme.tint }]}>
@@ -148,7 +154,7 @@ export default function ForgotPasswordScreen() {
           {/* Back to login */}
           <View style={styles.footer}>
             <TouchableOpacity
-              onPress={() => router.replace('/(auth)/login')}
+              onPress={() => router.back()}
               style={styles.backRow}>
               <Ionicons name="arrow-back" size={16} color={theme.tint} />
               <Text style={[styles.footerLink, { color: theme.tint }]}>Volver al login</Text>
@@ -168,6 +174,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     gap: 32,
+  },
+  backWrap: {
+    position: 'absolute',
+    top: 16,
+    left: 24,
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',

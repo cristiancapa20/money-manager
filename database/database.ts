@@ -147,6 +147,27 @@ export async function insertCategory(
   });
 }
 
+export async function updateCategory(
+  id: string,
+  fields: Pick<Category, 'name' | 'color' | 'icon'>,
+  userId: string,
+): Promise<void> {
+  const catResult = await turso.execute({
+    sql: `SELECT "isSystem" FROM "Category" WHERE id = ? AND "userId" = ?`,
+    args: [id, userId],
+  });
+  if (catResult.rows.length === 0) {
+    throw new Error('Categoria no encontrada.');
+  }
+  if (Number(catResult.rows[0].isSystem) === 1) {
+    throw new Error('No se puede editar una categoria del sistema.');
+  }
+  await turso.execute({
+    sql: `UPDATE "Category" SET name = ?, color = ?, icon = ? WHERE id = ? AND "userId" = ?`,
+    args: [fields.name, fields.color, fields.icon, id, userId],
+  });
+}
+
 export async function countTransactionsByCategoryId(categoryId: string, userId: string): Promise<number> {
   const result = await turso.execute({
     sql: `SELECT COUNT(*) AS cnt FROM "Transaction" WHERE "categoryId" = ? AND "userId" = ? AND "deletedAt" IS NULL`,

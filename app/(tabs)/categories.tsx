@@ -1,10 +1,10 @@
+import { BackButton } from '@/components/back-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useApp } from '@/contexts/app-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Alert,
@@ -33,7 +33,6 @@ const ICON_OPTIONS = [
 export default function CategoriesScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const router = useRouter();
   const { categories, addCategory, deleteCategory } = useApp();
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -84,9 +83,7 @@ export default function CategoriesScreen() {
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
+        <BackButton />
         <ThemedText type="title" style={styles.headerTitle}>Categorías</ThemedText>
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
@@ -216,7 +213,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 12,
   },
-  backBtn: { padding: 4 },
   headerTitle: { flex: 1 },
   addBtn: {
     width: 36,

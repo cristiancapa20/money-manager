@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/back-button';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { CURRENCIES } from '@/contexts/currency-context';
@@ -142,13 +143,7 @@ export default function ProfileScreen() {
 
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
-        {/* Botón atrás — usa dismiss() para el efecto de pop correcto en Stack */}
-        <TouchableOpacity
-          onPress={() => router.dismiss()}
-          style={[styles.backBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
-          activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color={theme.text} />
-        </TouchableOpacity>
+        <BackButton />
 
         {/* Título */}
         <Text style={[styles.topTitle, { color: theme.text }]}>Mi perfil</Text>
@@ -308,15 +303,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
+    gap: 10,
   },
   topTitle: { flex: 1, fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },

@@ -1,11 +1,27 @@
+import { Colors } from '@/constants/theme';
 import { useCurrency } from '@/hooks/use-currency';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Card } from '@/types/card';
 import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_ICONS } from '@/types/card';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import type { Transaction } from '@/types/transaction';
+import Carousel from 'react-native-reanimated-carousel';
+import type { ICarouselInstance } from 'react-native-reanimated-carousel';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const PARENT_PADDING = 36; // listContent (16) + headerContainer (20)
+const CARD_PADDING = 20;
+const CAROUSEL_WIDTH = SCREEN_WIDTH;
 
 interface CardCarouselProps {
   cards: Card[];
@@ -14,92 +30,121 @@ interface CardCarouselProps {
   transactions: Transaction[];
   onDeleteCard?: (cardId: string) => Promise<void>;
   onEditCard?: (card: Card) => void;
+  onAddCard?: () => void;
 }
 
-export function CardCarousel({
+export const CardCarousel = React.memo(function CardCarousel({
   cards,
   selectedCardIndex,
   onCardChange,
   transactions,
   onDeleteCard,
   onEditCard,
+  onAddCard,
 }: CardCarouselProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const theme = Colors[scheme];
+  const carouselRef = useRef<ICarouselInstance>(null);
+
+  const handleSnapToItem = useCallback(
+    (index: number) => {
+      onCardChange(index);
+    },
+    [onCardChange],
+  );
+
+  const balances = useMemo(() => {
+    const map: Record<string, { balance: number; income: number; expenses: number }> = {};
+    for (const card of cards) {
+      const cardTx = transactions.filter((t) => t.accountId === card.id);
+      const income = cardTx
+        .filter((t) => t.type === 'INCOME')
+        .reduce((sum, t) => sum + t.amount, 0);
+      const expenses = cardTx
+        .filter((t) => t.type === 'EXPENSE')
+        .reduce((sum, t) => sum + t.amount, 0);
+      map[card.id] = {
+        balance: card.initialBalance + income - expenses,
+        income,
+        expenses,
+      };
+    }
+    return map;
+  }, [cards, transactions]);
+
+  const renderCard = useCallback(
+    ({ item }: { item: Card }) => {
+      const data = balances[item.id] ?? { balance: 0, income: 0, expenses: 0 };
+      return (
+        <View style={styles.cardWrapper}>
+          <CardItem
+            card={item}
+            balance={data.balance}
+            income={data.income}
+            expenses={data.expenses}
+            onDeleteCard={onDeleteCard}
+            onEditCard={onEditCard}
+          />
+        </View>
+      );
+    },
+    [balances, onDeleteCard, onEditCard],
+  );
+
   if (cards.length === 0) {
     return null;
   }
 
-  const selectedCard = cards[selectedCardIndex];
-  const cardTransactions = transactions.filter((t) => t.accountId === selectedCard.id);
-  const income = cardTransactions
-    .filter((t) => t.type === 'INCOME')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const expenses = cardTransactions
-    .filter((t) => t.type === 'EXPENSE')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const balance = selectedCard.initialBalance + income - expenses;
-
-  const handlePrevious = () => {
-    if (selectedCardIndex > 0) {
-      onCardChange(selectedCardIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (selectedCardIndex < cards.length - 1) {
-      onCardChange(selectedCardIndex + 1);
-    }
-  };
-
   return (
     <View style={styles.container}>
-      <CardItem
-        card={selectedCard}
-        balance={balance}
-        income={income}
-        expenses={expenses}
-        onDeleteCard={onDeleteCard}
-        onEditCard={onEditCard}
+      <Carousel
+        ref={carouselRef}
+        data={cards}
+        renderItem={renderCard}
+        width={CAROUSEL_WIDTH}
+        height={210}
+        style={styles.carousel}
+        defaultIndex={selectedCardIndex}
+        onSnapToItem={handleSnapToItem}
+        loop={false}
+        panGestureHandlerProps={{
+          activeOffsetX: [-10, 10],
+        }}
       />
-      {cards.length > 1 && (
-        <View style={styles.navigationContainer}>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={handlePrevious}
-            activeOpacity={0.7}
-            disabled={selectedCardIndex === 0}>
-            <Ionicons
-              name="chevron-back"
-              size={20}
-              color={selectedCardIndex === 0 ? '#D1D5DB' : '#1E3A8A'}
-            />
-          </TouchableOpacity>
+      <View style={styles.footer}>
+        {cards.length > 1 ? (
           <View style={styles.indicators}>
             {cards.map((_, index) => (
               <View
                 key={index}
                 style={[
                   styles.indicator,
-                  index === selectedCardIndex && styles.indicatorActive,
+                  { backgroundColor: theme.border },
+                  index === selectedCardIndex && [
+                    styles.indicatorActive,
+                    { backgroundColor: theme.tint },
+                  ],
                 ]}
               />
             ))}
           </View>
+        ) : (
+          <View />
+        )}
+        {onAddCard && (
           <TouchableOpacity
-            style={styles.navButton}
-            onPress={handleNext}
-            activeOpacity={0.7}
-            disabled={selectedCardIndex === cards.length - 1}>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={selectedCardIndex === cards.length - 1 ? '#D1D5DB' : '#1E3A8A'}
-            />
+            style={[styles.addButton, { backgroundColor: theme.tintLight, borderColor: theme.tintBorder }]}
+            onPress={onAddCard}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="add" size={16} color={theme.tint} />
+            <Text style={[styles.addButtonText, { color: theme.tint }]}>Nueva</Text>
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
-}
+});
 
 interface CardItemProps {
   card: Card;
@@ -124,7 +169,7 @@ function CardItem({ card, balance, onDeleteCard, onEditCard }: CardItemProps) {
   const handleDeletePress = () => {
     Alert.alert(
       'Eliminar tarjeta',
-      `¿Estás seguro de que deseas eliminar la tarjeta "${card.name}"? Esta acción no se puede deshacer.`,
+      `Estas seguro de que deseas eliminar la tarjeta "${card.name}"? Esta accion no se puede deshacer.`,
       [
         {
           text: 'Cancelar',
@@ -144,79 +189,72 @@ function CardItem({ card, balance, onDeleteCard, onEditCard }: CardItemProps) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
   return (
-    <View style={styles.cardContainer}>
-      <LinearGradient
-        colors={[cardColor, darkerColor]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.card}>
-        {/* Pattern overlay */}
-        <View style={styles.patternOverlay}>
-          <View style={styles.patternCircle1} />
-          <View style={styles.patternCircle2} />
-        </View>
+    <LinearGradient
+      colors={[cardColor, darkerColor]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.card}>
+      <View style={styles.patternOverlay}>
+        <View style={styles.patternCircle1} />
+        <View style={styles.patternCircle2} />
+      </View>
 
-        {/* Content */}
-        <View style={styles.cardContent}>
-          {/* Top section with account type icon and action buttons */}
-          <View style={styles.cardTop}>
-            <View style={styles.bankSection}>
-              <View style={styles.bankIconContainer}>
-                <Ionicons name={(ACCOUNT_TYPE_ICONS[card.type] || 'wallet-outline') as any} size={20} color="#FFFFFF" />
-              </View>
-              <View>
-                <Text style={styles.bankLabel}>{ACCOUNT_TYPE_LABELS[card.type] || card.type}</Text>
-                <Text style={styles.bankName}>{card.name}</Text>
-              </View>
+      <View style={styles.cardContent}>
+        <View style={styles.cardTop}>
+          <View style={styles.bankSection}>
+            <View style={styles.bankIconContainer}>
+              <Ionicons name={(ACCOUNT_TYPE_ICONS[card.type] || 'wallet-outline') as any} size={20} color="#FFFFFF" />
             </View>
-            <View style={styles.cardActions}>
-              {onEditCard && (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => onEditCard(card)}
-                  activeOpacity={0.7}>
-                  <Ionicons name="pencil-outline" size={18} color="#FFFFFF" />
-                </TouchableOpacity>
-              )}
-              {onDeleteCard && (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={handleDeletePress}
-                  activeOpacity={0.7}>
-                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-                </TouchableOpacity>
-              )}
+            <View>
+              <Text style={styles.bankLabel}>{ACCOUNT_TYPE_LABELS[card.type] || card.type}</Text>
+              <Text style={styles.bankName}>{card.name}</Text>
             </View>
           </View>
-
-          {/* Balance section */}
-          <View style={styles.balanceSection}>
-            <View style={styles.balanceLabelContainer}>
-              <Text style={styles.balanceLabel}>Saldo disponible</Text>
+          <View style={styles.cardActions}>
+            {onEditCard && (
               <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={toggleBalanceVisibility}
+                style={styles.actionButton}
+                onPress={() => onEditCard(card)}
                 activeOpacity={0.7}>
-                <Ionicons
-                  name={isBalanceVisible ? 'eye-outline' : 'eye-off-outline'}
-                  size={18}
-                  color="#FFFFFF"
-                />
+                <Ionicons name="pencil-outline" size={18} color="#FFFFFF" />
               </TouchableOpacity>
-            </View>
-            <Text style={styles.balanceAmount}>
-              {isBalanceVisible ? formatCurrency(balance) : '••••••'}
-            </Text>
+            )}
+            {onDeleteCard && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleDeletePress}
+                activeOpacity={0.7}>
+                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
           </View>
-
         </View>
-      </LinearGradient>
-    </View>
+
+        <View style={styles.balanceSection}>
+          <View style={styles.balanceLabelContainer}>
+            <Text style={styles.balanceLabel}>Saldo disponible</Text>
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={toggleBalanceVisibility}
+              activeOpacity={0.7}>
+              <Ionicons
+                name={isBalanceVisible ? 'eye-outline' : 'eye-off-outline'}
+                size={18}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.balanceAmount}>
+            {isBalanceVisible ? formatCurrency(balance) : '******'}
+          </Text>
+        </View>
+      </View>
+    </LinearGradient>
   );
 }
 
@@ -232,21 +270,22 @@ function adjustColor(color: string, amount: number): string {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
+    marginHorizontal: -PARENT_PADDING,
   },
-  cardContainer: {
-    marginHorizontal: 8,
+  carousel: {
+    width: CAROUSEL_WIDTH,
+  },
+  cardWrapper: {
+    flex: 1,
+    paddingHorizontal: CARD_PADDING,
   },
   card: {
-    width: '100%',
-    height: 200,
+    flex: 1,
     borderRadius: 24,
     padding: 24,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
@@ -347,25 +386,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  
-  navigationContainer: {
+  footer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 16,
-    marginTop: 16,
-  },
-  navButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginTop: 12,
   },
   indicators: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
   },
@@ -373,11 +402,21 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#D1D5DB',
   },
   indicatorActive: {
-    width: 32,
-    backgroundColor: '#1E3A8A',
+    width: 28,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 4,
+  },
+  addButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
-

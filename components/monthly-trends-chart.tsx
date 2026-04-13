@@ -132,7 +132,7 @@ export function MonthlyTrendsChart({ accountId }: MonthlyTrendsChartProps) {
   const barWidth = range <= 6 ? 10 : 6;
 
   return (
-    <ThemedView style={[styles.container, { borderColor: theme.border }]}>
+    <ThemedView style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <ThemedText type="subtitle" style={styles.title}>
         Tendencias Mensuales
       </ThemedText>
@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
   },
   title: {
     fontSize: 18,

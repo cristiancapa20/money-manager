@@ -6,11 +6,11 @@ import { useCurrency } from '@/hooks/use-currency';
 import type { Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
-import { BarChart } from 'react-native-gifted-charts';
+import { StyleSheet, View } from 'react-native';
+import { CartesianChart, BarGroup } from 'victory-native';
+import { useFont } from '@shopify/react-native-skia';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHART_WIDTH = SCREEN_WIDTH - 64;
+const CHART_FONT = require('@/assets/fonts/Roboto-Medium.ttf');
 
 interface DailyChartProps {
   transactions: Transaction[];
@@ -18,21 +18,26 @@ interface DailyChartProps {
   selectedYear: number;
 }
 
+interface DailyDataPoint {
+  day: number;
+  income: number;
+  expense: number;
+}
+
 export function DailyChart({ transactions, selectedMonth, selectedYear }: DailyChartProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const { formatCurrency, formatCompact } = useCurrency();
+  const { formatCurrency } = useCurrency();
+  const font = useFont(CHART_FONT, 10);
 
-  const { chartData, maxValue, totalIncome, totalExpenses } = useMemo(() => {
+  const { chartData, totalIncome, totalExpenses } = useMemo(() => {
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
-    // Initialize daily totals for every day of the month
     const dailyTotals: { income: number; expense: number }[] = Array.from(
       { length: daysInMonth },
       () => ({ income: 0, expense: 0 }),
     );
 
-    // Accumulate transactions into their respective days
     transactions.forEach((t) => {
       const d = new Date(t.date || t.createdAt);
       if (d.getMonth() !== selectedMonth || d.getFullYear() !== selectedYear) return;
@@ -43,50 +48,29 @@ export function DailyChart({ transactions, selectedMonth, selectedYear }: DailyC
 
     let incomeSum = 0;
     let expenseSum = 0;
-    let max = 0;
 
-    const data: any[] = [];
-
-    dailyTotals.forEach((day, i) => {
+    const data: DailyDataPoint[] = dailyTotals.map((day, i) => {
       incomeSum += day.income;
       expenseSum += day.expense;
-      const dayMax = Math.max(day.income, day.expense);
-      if (dayMax > max) max = dayMax;
-
-      // Show label every ~5 days for readability
-      const dayNum = i + 1;
-      const showLabel = dayNum === 1 || dayNum % 5 === 0 || dayNum === daysInMonth;
-
-      // Income bar (first in pair)
-      data.push({
-        value: day.income,
-        label: showLabel ? `${dayNum}` : '',
-        labelTextStyle: { color: theme.textMuted, fontSize: 8 },
-        frontColor: theme.income,
-        spacing: 1,
-      });
-
-      // Expense bar (second in pair)
-      data.push({
-        value: day.expense,
-        frontColor: theme.expense,
-        spacing: i < daysInMonth - 1 ? 6 : 0,
-      });
+      return {
+        day: i + 1,
+        income: day.income,
+        expense: day.expense,
+      };
     });
 
     return {
       chartData: data,
-      maxValue: max,
       totalIncome: incomeSum,
       totalExpenses: expenseSum,
     };
-  }, [transactions, selectedMonth, selectedYear, theme]);
+  }, [transactions, selectedMonth, selectedYear]);
 
   const hasData = totalIncome > 0 || totalExpenses > 0;
 
   if (!hasData) {
     return (
-      <ThemedView style={[styles.container, { borderColor: theme.border }]}>
+      <ThemedView style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <ThemedText type="subtitle" style={styles.title}>
           Ingresos y Gastos Diarios
         </ThemedText>
@@ -101,7 +85,7 @@ export function DailyChart({ transactions, selectedMonth, selectedYear }: DailyC
   }
 
   return (
-    <ThemedView style={[styles.container, { borderColor: theme.border }]}>
+    <ThemedView style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <ThemedText type="subtitle" style={styles.title}>
         Ingresos y Gastos Diarios
       </ThemedText>
@@ -123,29 +107,33 @@ export function DailyChart({ transactions, selectedMonth, selectedYear }: DailyC
       </View>
 
       <View style={styles.chartContainer}>
-        <BarChart
+        <CartesianChart
           data={chartData}
-          height={180}
-          width={CHART_WIDTH}
-          barWidth={4}
-          noOfSections={4}
-          maxValue={maxValue * 1.15 || 100}
-          yAxisColor="transparent"
-          xAxisColor={theme.border}
-          yAxisTextStyle={{ color: theme.textMuted, fontSize: 9 }}
-          xAxisLabelTextStyle={{ color: theme.textMuted, fontSize: 8 }}
-          hideRules={false}
-          rulesType="dashed"
-          rulesColor={theme.border}
-          rulesThickness={0.5}
-          dashWidth={4}
-          dashGap={4}
-          initialSpacing={8}
-          endSpacing={8}
-          yAxisLabelWidth={50}
-          formatYLabel={(value) => formatCompact(parseFloat(value))}
-          isAnimated
-        />
+          xKey="day"
+          yKeys={['income', 'expense']}
+          domainPadding={{ left: 10, right: 10, top: 20 }}
+          axisOptions={{
+            font,
+            tickCount: { x: 6, y: 4 },
+            labelColor: theme.textMuted,
+            lineColor: theme.border,
+          }}
+        >
+          {({ points, chartBounds }) => (
+            <BarGroup chartBounds={chartBounds} betweenGroupPadding={0.3} withinGroupPadding={0.1}>
+              <BarGroup.Bar
+                points={points.income}
+                color={theme.income}
+                animate={{ type: 'spring' }}
+              />
+              <BarGroup.Bar
+                points={points.expense}
+                color={theme.expense}
+                animate={{ type: 'spring' }}
+              />
+            </BarGroup>
+          )}
+        </CartesianChart>
       </View>
     </ThemedView>
   );
@@ -162,6 +150,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
   },
   title: {
     fontSize: 18,
@@ -188,9 +177,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   chartContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
     height: 220,
   },
   emptyChart: {

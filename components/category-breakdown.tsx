@@ -6,10 +6,12 @@ import { useCurrency } from '@/hooks/use-currency';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { PieChart } from 'react-native-gifted-charts';
+import { Pie, PolarChart } from 'victory-native';
+import { useFont } from '@shopify/react-native-skia';
+
+const CHART_FONT = require('@/assets/fonts/Roboto-Medium.ttf');
 import type { Transaction } from '@/types/transaction';
 
-// Fallback colors for categories without a defined color
 const FALLBACK_COLORS = [
   '#6366f1', '#f43f5e', '#f59e0b', '#10b981', '#3b82f6',
   '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4',
@@ -31,6 +33,7 @@ export function CategoryBreakdown({ transactions }: CategoryBreakdownProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
   const { formatCurrency } = useCurrency();
+  const font = useFont(CHART_FONT, 11);
 
   const { categories, totalExpenses } = useMemo(() => {
     const expenses = transactions.filter((t) => t.type === 'EXPENSE');
@@ -39,7 +42,7 @@ export function CategoryBreakdown({ transactions }: CategoryBreakdownProps) {
     const grouped = new Map<string, { amount: number; color: string; icon: string }>();
 
     expenses.forEach((t) => {
-      const key = t.category || 'Sin categoría';
+      const key = t.category || 'Sin categoria';
       const existing = grouped.get(key);
       if (existing) {
         existing.amount += t.amount;
@@ -67,13 +70,13 @@ export function CategoryBreakdown({ transactions }: CategoryBreakdownProps) {
 
   if (categories.length === 0) {
     return (
-      <ThemedView style={[styles.container, { borderColor: theme.border }]}>
+      <ThemedView style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <ThemedText type="subtitle" style={styles.title}>
-          Gastos por Categoría
+          Gastos por Categoria
         </ThemedText>
         <View style={styles.emptyState}>
           <ThemedText style={styles.emptyText}>
-            No hay gastos en este período
+            No hay gastos en este periodo
           </ThemedText>
         </View>
       </ThemedView>
@@ -81,38 +84,47 @@ export function CategoryBreakdown({ transactions }: CategoryBreakdownProps) {
   }
 
   const pieData = categories.map((cat) => ({
+    label: cat.name,
     value: cat.amount,
     color: cat.color,
-    text: `${Math.round(cat.percentage)}%`,
-    textColor: theme.text,
-    textSize: 10,
   }));
 
   return (
-    <ThemedView style={[styles.container, { borderColor: theme.border }]}>
+    <ThemedView style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <ThemedText type="subtitle" style={styles.title}>
-        Gastos por Categoría
+        Gastos por Categoria
       </ThemedText>
 
       {/* Pie chart */}
       <View style={styles.chartWrapper}>
-        <PieChart
+        <PolarChart
           data={pieData}
-          donut
-          radius={90}
-          innerRadius={55}
-          innerCircleColor={theme.card}
-          centerLabelComponent={() => (
-            <View style={styles.centerLabel}>
-              <ThemedText style={styles.centerAmount}>
-                {formatCurrency(totalExpenses)}
-              </ThemedText>
-              <ThemedText style={[styles.centerSubtext, { color: theme.textSecondary }]}>
-                Total
-              </ThemedText>
-            </View>
-          )}
-        />
+          labelKey="label"
+          valueKey="value"
+          colorKey="color"
+          containerStyle={styles.polarContainer}
+        >
+          <Pie.Chart innerRadius="55%">
+            {({ slice }) => (
+              <Pie.Slice>
+                <Pie.Label
+                  font={font}
+                  color={theme.text}
+                  text={`${Math.round((slice.value / totalExpenses) * 100)}%`}
+                  radiusOffset={0.6}
+                />
+              </Pie.Slice>
+            )}
+          </Pie.Chart>
+        </PolarChart>
+        <View style={styles.centerOverlay}>
+          <ThemedText style={styles.centerAmount}>
+            {formatCurrency(totalExpenses)}
+          </ThemedText>
+          <ThemedText style={[styles.centerSubtext, { color: theme.textSecondary }]}>
+            Total
+          </ThemedText>
+        </View>
       </View>
 
       {/* Category list */}
@@ -157,6 +169,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
   },
   title: {
     marginBottom: 16,
@@ -165,9 +178,16 @@ const styles = StyleSheet.create({
   },
   chartWrapper: {
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
+    height: 200,
   },
-  centerLabel: {
+  polarContainer: {
+    height: 200,
+    width: 200,
+  },
+  centerOverlay: {
+    position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
   },

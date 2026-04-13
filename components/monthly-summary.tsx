@@ -28,7 +28,7 @@ export function MonthlySummary({
   const { formatCurrency } = useCurrency();
 
   return (
-    <ThemedView style={[styles.container, { borderColor: theme.border }]}>
+    <ThemedView style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
       {/* Month navigator */}
       <View style={styles.monthNav}>
         <TouchableOpacity onPress={onPrevMonth} hitSlop={8}>
@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
   },
   monthNav: {
     flexDirection: 'row',

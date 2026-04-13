@@ -153,11 +153,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* categories oculto del tab bar */}
-      <Tabs.Screen
-        name="categories"
-        options={{ href: null }}
-      />
     </Tabs>
   );
 }

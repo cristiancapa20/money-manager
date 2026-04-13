@@ -31,6 +31,7 @@ interface AppContextType {
   deleteCard: (id: string) => Promise<void>;
   refreshCards: () => Promise<void>;
   addCategory: (cat: Omit<Category, 'id' | 'isSystem' | 'userId'>) => Promise<void>;
+  updateCategory: (id: string, fields: Pick<Category, 'name' | 'color' | 'icon'>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   refreshCategories: () => Promise<void>;
   subscriptions: Subscription[];
@@ -188,6 +189,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshCategories();
   };
 
+  const updateCategory = async (id: string, fields: Pick<Category, 'name' | 'color' | 'icon'>) => {
+    if (!user) throw new Error('No autenticado');
+    await db.updateCategory(id, fields, user.id);
+    await refreshCategories();
+  };
+
   const deleteCategory = async (id: string) => {
     if (!user) throw new Error('No autenticado');
     await db.deleteCategory(id, user.id);
@@ -335,6 +342,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshTransactions,
         getAccountBalance,
         addCategory,
+        updateCategory,
         deleteCategory,
         refreshCategories,
         cards,

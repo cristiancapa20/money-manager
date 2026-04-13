@@ -4,8 +4,9 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useApp } from '@/contexts/app-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import type { Category } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -33,12 +34,18 @@ const ICON_OPTIONS = [
 export default function CategoriesScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const { categories, addCategory, deleteCategory } = useApp();
+  const { categories, addCategory, updateCategory, deleteCategory } = useApp();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
   const [selectedIcon, setSelectedIcon] = useState(ICON_OPTIONS[0]);
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
+  const [editColor, setEditColor] = useState(COLOR_OPTIONS[0]);
+  const [editIcon, setEditIcon] = useState(ICON_OPTIONS[0]);
 
   const resetForm = () => {
     setName('');
@@ -54,7 +61,27 @@ export default function CategoriesScreen() {
       setModalVisible(false);
       resetForm();
     } catch (err) {
-      Alert.alert('Error', 'No se pudo crear la categoría');
+      Alert.alert('Error', 'No se pudo crear la categoria');
+    }
+  };
+
+  const handleEdit = useCallback((cat: Category) => {
+    if (cat.isSystem) return;
+    setEditingCategoryId(cat.id);
+    setEditingCategoryName(cat.name);
+    setEditColor(cat.color);
+    setEditIcon(cat.icon);
+    setEditModalVisible(true);
+  }, []);
+
+  const handleUpdate = async () => {
+    const trimmed = editingCategoryName.trim();
+    if (!editingCategoryId || !trimmed) return;
+    try {
+      await updateCategory(editingCategoryId, { name: trimmed, color: editColor, icon: editIcon });
+      setEditModalVisible(false);
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'No se pudo editar la categoria');
     }
   };
 
@@ -100,6 +127,7 @@ export default function CategoriesScreen() {
           <TouchableOpacity
             key={cat.id}
             style={[styles.categoryButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+            onPress={() => handleEdit(cat)}
             onLongPress={() => {
               if (!cat.isSystem) handleDelete(cat.id, cat.name);
             }}
@@ -196,6 +224,85 @@ export default function CategoriesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Edit Modal */}
+      <Modal visible={editModalVisible} animationType="slide" transparent>
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { backgroundColor: theme.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Editar categoria</Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Ionicons name="close" size={24} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Name */}
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholder="Nombre de la categoria"
+              placeholderTextColor={theme.textMuted}
+              value={editingCategoryName}
+              onChangeText={setEditingCategoryName}
+            />
+
+            {/* Color Picker */}
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Color</Text>
+            <View style={styles.optionsGrid}>
+              {COLOR_OPTIONS.map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => setEditColor(c)}
+                  style={[
+                    styles.colorCircle,
+                    { backgroundColor: c },
+                    editColor === c && styles.colorSelected,
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Icon Picker */}
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Icono</Text>
+            <View style={styles.optionsGrid}>
+              {ICON_OPTIONS.map((ic) => (
+                <TouchableOpacity
+                  key={ic}
+                  onPress={() => setEditIcon(ic)}
+                  style={[
+                    styles.iconOption,
+                    { backgroundColor: theme.input, borderColor: theme.inputBorder },
+                    editIcon === ic && { borderColor: editColor, backgroundColor: editColor + '20' },
+                  ]}>
+                  <Ionicons
+                    name={ic as any}
+                    size={22}
+                    color={editIcon === ic ? editColor : theme.textSecondary}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Preview */}
+            <View style={[styles.preview, { backgroundColor: theme.input }]}>
+              <View style={[styles.iconCircle, { backgroundColor: editColor + '20' }]}>
+                <Ionicons name={editIcon as any} size={22} color={editColor} />
+              </View>
+              <Text style={[styles.previewText, { color: theme.text }]}>
+                {editingCategoryName.trim() || 'Vista previa'}
+              </Text>
+            </View>
+
+            {/* Save */}
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: theme.tint, opacity: editingCategoryName.trim() ? 1 : 0.5 }]}
+              onPress={handleUpdate}
+              disabled={!editingCategoryName.trim()}
+              activeOpacity={0.8}>
+              <Text style={styles.saveBtnText}>Guardar cambios</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -282,6 +389,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   colorCircle: {

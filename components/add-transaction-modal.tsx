@@ -1,3 +1,4 @@
+import { CategoryFormModal } from '@/components/category-form-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
@@ -8,6 +9,7 @@ import type { Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -38,7 +40,7 @@ export function AddTransactionModal({
 }: AddTransactionModalProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
-  const { categories, getAccountBalance } = useApp();
+  const { categories, getAccountBalance, addCategory } = useApp();
   const { formatCurrency } = useCurrency();
 
   const [description, setDescription] = useState('');
@@ -46,6 +48,28 @@ export function AddTransactionModal({
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [balanceError, setBalanceError] = useState('');
+
+  const [newCatModalVisible, setNewCatModalVisible] = useState(false);
+  const [pendingCatName, setPendingCatName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingCatName) return;
+    const created = categories.find((c) => c.name === pendingCatName);
+    if (created) {
+      setCategoryId(created.id);
+      setPendingCatName(null);
+    }
+  }, [categories, pendingCatName]);
+
+  const handleCreateCategory = async (values: { name: string; color: string; icon: string }) => {
+    try {
+      await addCategory(values);
+      setPendingCatName(values.name);
+      setNewCatModalVisible(false);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'No se pudo crear la categoria');
+    }
+  };
 
   useEffect(() => {
     if (editingTransaction) {
@@ -223,6 +247,21 @@ export function AddTransactionModal({
                     </TouchableOpacity>
                   );
                 })}
+                <TouchableOpacity
+                  style={[
+                    styles.catBtn,
+                    { backgroundColor: theme.divider, borderColor: 'transparent' },
+                  ]}
+                  onPress={() => setNewCatModalVisible(true)}>
+                  <View style={[styles.catIcon, { backgroundColor: `${theme.tint}22` }]}>
+                    <Ionicons name="add" size={24} color={theme.tint} />
+                  </View>
+                  <Text
+                    style={[styles.catText, { color: theme.textSecondary, fontWeight: '600' }]}
+                    numberOfLines={1}>
+                    Nueva
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
@@ -245,6 +284,13 @@ export function AddTransactionModal({
           </View>
         </ThemedView>
       </View>
+
+      <CategoryFormModal
+        visible={newCatModalVisible}
+        mode="create"
+        onClose={() => setNewCatModalVisible(false)}
+        onSubmit={handleCreateCategory}
+      />
     </Modal>
   );
 }

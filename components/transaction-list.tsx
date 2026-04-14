@@ -6,8 +6,10 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCurrency } from '@/hooks/use-currency';
 import type { Category, Transaction } from '@/types/transaction';
 import { Ionicons } from '@expo/vector-icons';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import LottieView from 'lottie-react-native';
+import { type ReactNode, useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 type TypeFilter = 'ALL' | 'INCOME' | 'EXPENSE';
 
@@ -157,13 +159,12 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
 
   const ListEmptyComponent = () => (
     <ThemedView style={styles.emptyContainer}>
-      <View style={[styles.emptyIconWrap, { backgroundColor: theme.tintLight }]}>
-        <Ionicons
-          name={balanceCard ? 'receipt-outline' : 'card-outline'}
-          size={32}
-          color={theme.tint}
-        />
-      </View>
+      <LottieView
+        source={require('@/assets/animations/empty-box.json')}
+        autoPlay
+        loop
+        style={styles.lottieEmpty}
+      />
       <ThemedText style={styles.emptyText}>
         {hasActiveFilters ? 'Sin resultados' : balanceCard ? 'Sin transacciones' : 'Ninguna cuenta seleccionada'}
       </ThemedText>
@@ -182,8 +183,10 @@ export function TransactionList({ transactions, balanceCard, onEditTransaction }
       <FlatList
         data={filteredAndSorted}
         keyExtractor={(item, index) => item.id ?? `tx-${index}-${item.amount}`}
-        renderItem={({ item }) => (
-          <TransactionItem transaction={item} onEdit={onEditTransaction} />
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInDown.delay(index * 50).duration(300).springify()}>
+            <TransactionItem transaction={item} onEdit={onEditTransaction} />
+          </Animated.View>
         )}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={ListEmptyComponent}
@@ -562,6 +565,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  lottieEmpty: { width: 150, height: 150 },
   emptyText:    { fontSize: 17, fontWeight: '600', marginBottom: 6 },
   emptySubtext: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
 

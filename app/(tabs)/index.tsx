@@ -1,6 +1,7 @@
 import { AddCardModal } from '@/components/add-card-modal';
 import { AddTransactionModal } from '@/components/add-transaction-modal';
 import { CardCarousel } from '@/components/card-carousel';
+import { SuccessOverlay } from '@/components/success-overlay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TransactionList } from '@/components/transaction-list';
@@ -13,7 +14,8 @@ import type { Transaction } from '@/types/transaction';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LottieView from 'lottie-react-native';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   const {
@@ -40,6 +42,7 @@ export default function HomeScreen() {
 
   const [cardModalVisible, setCardModalVisible] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const selectedCardIndex = useMemo(() => {
     if (!selectedCardId || cards.length === 0) return 0;
@@ -87,8 +90,9 @@ export default function HomeScreen() {
       }
       setTransactionModalVisible(false);
       setEditingTransaction(null);
+      setShowSuccess(true);
     } catch (error: any) {
-      Alert.alert('Error', error.message ?? 'No se pudo guardar la transacción');
+      Alert.alert('Error', error.message ?? 'No se pudo guardar la transaccion');
     }
   };
 
@@ -101,6 +105,7 @@ export default function HomeScreen() {
       }
       setCardModalVisible(false);
       setEditingCard(null);
+      setShowSuccess(true);
     } catch (error) {
       console.error('Error al guardar tarjeta:', error);
     }
@@ -122,7 +127,12 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <ThemedView style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={theme.tint} />
+        <LottieView
+          source={require('@/assets/animations/loading.json')}
+          autoPlay
+          loop
+          style={{ width: 120, height: 120 }}
+        />
         <ThemedText style={styles.loadingText}>Cargando datos...</ThemedText>
       </ThemedView>
     );
@@ -190,6 +200,7 @@ export default function HomeScreen() {
         transactions={transactions}
       />
 
+      <SuccessOverlay visible={showSuccess} onFinish={() => setShowSuccess(false)} />
     </ThemedView>
   );
 }

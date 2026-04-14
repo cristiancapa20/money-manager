@@ -1,4 +1,5 @@
 import { AddSubscriptionModal } from '@/components/add-subscription-modal';
+import { SuccessOverlay } from '@/components/success-overlay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
@@ -7,9 +8,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCurrency } from '@/hooks/use-currency';
 import type { Subscription } from '@/types/subscription';
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   RefreshControl,
@@ -18,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
@@ -43,6 +45,7 @@ export default function SubscriptionsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSub, setEditingSub] = useState<Subscription | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const filteredSubs = useMemo(() => {
     if (statusFilter === 'ALL') return subscriptions;
@@ -95,6 +98,7 @@ export default function SubscriptionsScreen() {
       }
       setModalVisible(false);
       setEditingSub(null);
+      setShowSuccess(true);
     } catch (err: any) {
       Alert.alert('Error', err.message);
     }
@@ -209,7 +213,12 @@ export default function SubscriptionsScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={theme.tint} />
+        <LottieView
+          source={require('@/assets/animations/loading.json')}
+          autoPlay
+          loop
+          style={styles.lottieLoading}
+        />
       </ThemedView>
     );
   }
@@ -311,14 +320,23 @@ export default function SubscriptionsScreen() {
       <FlatList
         data={filteredSubs}
         keyExtractor={(item) => item.id}
-        renderItem={renderItem}
+        renderItem={(info) => (
+          <Animated.View entering={FadeInDown.delay(info.index * 50).duration(300).springify()}>
+            {renderItem(info)}
+          </Animated.View>
+        )}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.tint} />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="repeat-outline" size={48} color={theme.textMuted} />
+            <LottieView
+              source={require('@/assets/animations/wallet-empty.json')}
+              autoPlay
+              loop
+              style={styles.lottieEmpty}
+            />
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>
               No hay suscripciones registradas
             </Text>
@@ -337,6 +355,8 @@ export default function SubscriptionsScreen() {
         cards={cards}
         categories={categories}
       />
+
+      <SuccessOverlay visible={showSuccess} onFinish={() => setShowSuccess(false)} />
     </ThemedView>
   );
 }
@@ -455,7 +475,9 @@ const styles = StyleSheet.create({
   processBannerText: { flex: 1, gap: 2 },
   processTitle: { fontSize: 13, fontWeight: '600' },
   processSubtitle: { fontSize: 11 },
-  emptyState: { alignItems: 'center', paddingTop: 60, gap: 8 },
+  lottieLoading: { width: 120, height: 120 },
+  lottieEmpty: { width: 150, height: 150 },
+  emptyState: { alignItems: 'center', paddingTop: 40, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '600' },
   emptySubtext: { fontSize: 13 },
 });

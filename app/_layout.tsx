@@ -7,10 +7,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { OfflineBanner } from '@/components/offline-banner';
 import { OnboardingModal } from '@/components/onboarding-modal';
 import { AppProvider } from '@/contexts/app-context';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { CurrencyProvider } from '@/contexts/currency-context';
+import { NetworkProvider } from '@/contexts/network-context';
 import { AppThemeProvider } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -24,9 +26,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppThemeProvider>
-        <AuthProvider>
-          <RootLayoutContent />
-        </AuthProvider>
+        <NetworkProvider>
+          <AuthProvider>
+            <RootLayoutContent />
+          </AuthProvider>
+        </NetworkProvider>
       </AppThemeProvider>
     </GestureHandlerRootView>
   );
@@ -98,6 +102,7 @@ function RootLayoutContent() {
     <CurrencyProvider>
       <AppProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <OfflineBanner />
           <Stack screenOptions={{ contentStyle: { backgroundColor: bg } }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />

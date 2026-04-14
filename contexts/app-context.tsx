@@ -8,6 +8,8 @@ import {
 } from 'react';
 
 import * as db from '@/database/database';
+import { readWithCache } from '@/database/offline-cache';
+import { onFlushed, runOrQueue } from '@/database/sync-queue';
 import { scheduleLoanReminder, cancelLoanReminder, rescheduleAllLoanReminders } from '@/services/loan-notifications';
 import { processSubscriptions, type SubscriptionProcessResult } from '@/services/subscription-processor';
 import type { Card } from '@/types/card';
@@ -77,14 +79,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     try {
       setIsLoading(true);
-      await db.initDatabase();
+      try {
+        await db.initDatabase();
+      } catch {
+        // initDatabase falla offline — continuamos con caches
+      }
 
       const [loadedCards, loadedTransactions, loadedCategories, loadedLoans, loadedSubscriptions] = await Promise.all([
-        db.getAllCards(user.id),
-        db.getAllTransactions(user.id),
-        db.getAllCategories(user.id),
-        db.getAllLoans(user.id),
-        db.getAllSubscriptions(user.id),
+        readWithCache<Card>('cards', user.id, () => db.getAllCards(user.id)),
+        readWithCache<Transaction>('transactions', user.id, () => db.getAllTransactions(user.id)),
+        readWithCache<Category>('categories', user.id, () => db.getAllCategories(user.id)),
+        readWithCache<Loan>('loans', user.id, () => db.getAllLoans(user.id)),
+        readWithCache<Subscription>('subscriptions', user.id, () => db.getAllSubscriptions(user.id)),
       ]);
 
       setCards(loadedCards);
@@ -120,6 +126,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadAll();
   }, [loadAll]);
 
+  // Refrescar datos despues de drenar la cola offline
+  useEffect(() => {
+    if (!user) return;
+    onFlushed(() => {
+      loadAll();
+    });
+    return () => onFlushed(null);
+  }, [user, loadAll]);
+
   // ── Balance ────────────────────────────────────────────────────────────────
 
   const getAccountBalance = useCallback(
@@ -138,7 +153,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshTransactions = async () => {
     if (!user) return;
-    const loaded = await db.getAllTransactions(user.id);
+    const loaded = await readWithCache<Transaction>('transactions', user.id, () => db.getAllTransactions(user.id));
     setTransactions(loaded);
   };
 
@@ -146,7 +161,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     tx: Omit<Transaction, 'id' | 'createdAt' | 'userId' | 'deletedAt'>
   ) => {
     if (!user) throw new Error('No autenticado');
-    await db.insertTransaction({ ...tx, userId: user.id });
+    await runOrQueue('insertTransaction', [{ ...tx, userId: user.id }]);
     await refreshTransactions();
   };
 
@@ -158,7 +173,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (tx.managedViaSubscriptions) {
       throw new Error('Esta transacción fue creada automáticamente por una suscripción y no puede editarse.');
     }
-    await db.updateTransaction({ ...tx, userId: user.id });
+    await runOrQueue('updateTransaction', [{ ...tx, userId: user.id }]);
     await refreshTransactions();
   };
 
@@ -171,7 +186,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (tx?.managedViaSubscriptions) {
       throw new Error('Esta transacción fue creada automáticamente por una suscripción y no puede eliminarse.');
     }
-    await db.deleteTransaction(id, user.id);
+    await runOrQueue('deleteTransaction', [id, user.id]);
     await refreshTransactions();
   };
 
@@ -179,25 +194,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshCategories = async () => {
     if (!user) return;
-    const loaded = await db.getAllCategories(user.id);
+    const loaded = await readWithCache<Category>('categories', user.id, () => db.getAllCategories(user.id));
     setCategories(loaded);
   };
 
   const addCategory = async (cat: Omit<Category, 'id' | 'isSystem' | 'userId'>) => {
     if (!user) throw new Error('No autenticado');
-    await db.insertCategory({ ...cat, userId: user.id });
+    await runOrQueue('insertCategory', [{ ...cat, userId: user.id }]);
     await refreshCategories();
   };
 
   const updateCategory = async (id: string, fields: Pick<Category, 'name' | 'color' | 'icon'>) => {
     if (!user) throw new Error('No autenticado');
-    await db.updateCategory(id, fields, user.id);
+    await runOrQueue('updateCategory', [id, fields, user.id]);
     await refreshCategories();
   };
 
   const deleteCategory = async (id: string) => {
     if (!user) throw new Error('No autenticado');
-    await db.deleteCategory(id, user.id);
+    await runOrQueue('deleteCategory', [id, user.id]);
     await refreshCategories();
   };
 
@@ -205,25 +220,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshCards = async () => {
     if (!user) return;
-    const loaded = await db.getAllCards(user.id);
+    const loaded = await readWithCache<Card>('cards', user.id, () => db.getAllCards(user.id));
     setCards(loaded);
   };
 
   const addCard = async (card: Omit<Card, 'id' | 'userId'>) => {
     if (!user) throw new Error('No autenticado');
-    await db.insertCard({ ...card, userId: user.id });
+    await runOrQueue('insertCard', [{ ...card, userId: user.id }]);
     await refreshCards();
   };
 
   const updateCard = async (card: Card) => {
     if (!user) throw new Error('No autenticado');
-    await db.updateCard({ ...card, userId: user.id });
+    await runOrQueue('updateCard', [{ ...card, userId: user.id }]);
     await refreshCards();
   };
 
   const deleteCard = async (id: string) => {
     if (!user) throw new Error('No autenticado');
-    await db.deleteCard(id, user.id);
+    await runOrQueue('deleteCard', [id, user.id]);
     setSelectedCardId((prev) => {
       if (prev !== id) return prev;
       const remaining = cards.filter((c) => c.id !== id);
@@ -236,7 +251,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshSubscriptions = async () => {
     if (!user) return;
-    const loaded = await db.getAllSubscriptions(user.id);
+    const loaded = await readWithCache<Subscription>('subscriptions', user.id, () => db.getAllSubscriptions(user.id));
     setSubscriptions(loaded);
   };
 
@@ -244,7 +259,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sub: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'accountName' | 'categoryName' | 'categoryColor' | 'categoryIcon'>
   ) => {
     if (!user) throw new Error('No autenticado');
-    await db.insertSubscription({ ...sub, userId: user.id });
+    await runOrQueue('insertSubscription', [{ ...sub, userId: user.id }]);
     await refreshSubscriptions();
   };
 
@@ -252,13 +267,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sub: Pick<Subscription, 'id' | 'name' | 'amount' | 'billingDay' | 'active' | 'accountId' | 'categoryId'>
   ) => {
     if (!user) throw new Error('No autenticado');
-    await db.updateSubscription({ ...sub, userId: user.id });
+    await runOrQueue('updateSubscription', [{ ...sub, userId: user.id }]);
     await refreshSubscriptions();
   };
 
   const deleteSubscription = async (id: string) => {
     if (!user) throw new Error('No autenticado');
-    await db.deleteSubscription(id, user.id);
+    await runOrQueue('deleteSubscription', [id, user.id]);
     await refreshSubscriptions();
   };
 
@@ -266,7 +281,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshLoans = async (): Promise<Loan[]> => {
     if (!user) return [];
-    const loaded = await db.getAllLoans(user.id);
+    const loaded = await readWithCache<Loan>('loans', user.id, () => db.getAllLoans(user.id));
     setLoans(loaded);
     return loaded;
   };
@@ -275,7 +290,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'totalPaid' | 'accountName'>
   ) => {
     if (!user) throw new Error('No autenticado');
-    await db.insertLoan({ ...loan, userId: user.id });
+    await runOrQueue('insertLoan', [{ ...loan, userId: user.id }]);
     const [fresh] = await Promise.all([refreshLoans(), refreshTransactions()]);
     const created = fresh.find((l) => l.contactName === loan.contactName && l.amount === loan.amount);
     if (created) scheduleLoanReminder(created).catch(() => {});
@@ -285,7 +300,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loan: Pick<Loan, 'id' | 'contactName' | 'amount' | 'description' | 'dueDate' | 'reminderDays' | 'status'>
   ) => {
     if (!user) throw new Error('No autenticado');
-    await db.updateLoan({ ...loan, userId: user.id });
+    await runOrQueue('updateLoan', [{ ...loan, userId: user.id }]);
     const fresh = await refreshLoans();
     const updated = fresh.find((l) => l.id === loan.id);
     if (updated) scheduleLoanReminder(updated).catch(() => {});
@@ -294,7 +309,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteLoan = async (id: string) => {
     if (!user) throw new Error('No autenticado');
     await cancelLoanReminder(id);
-    await db.deleteLoan(id, user.id);
+    await runOrQueue('deleteLoan', [id, user.id]);
     await refreshLoans();
     await refreshTransactions();
   };
@@ -310,7 +325,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loan: Loan,
   ) => {
     if (!user) throw new Error('No autenticado');
-    await db.insertLoanPayment(payment, { ...loan, userId: user.id }, loan.totalPaid ?? 0);
+    await runOrQueue('insertLoanPayment', [payment, { ...loan, userId: user.id }, loan.totalPaid ?? 0]);
     await Promise.all([refreshLoans(), refreshTransactions()]);
   };
 
@@ -320,13 +335,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     oldAmount: number,
   ) => {
     if (!user) throw new Error('No autenticado');
-    await db.updateLoanPayment(payment, { ...loan, userId: user.id }, loan.totalPaid ?? 0, oldAmount);
+    await runOrQueue('updateLoanPayment', [payment, { ...loan, userId: user.id }, loan.totalPaid ?? 0, oldAmount]);
     await Promise.all([refreshLoans(), refreshTransactions()]);
   };
 
   const deleteLoanPayment = async (paymentId: string, loan: Loan, paymentAmount: number) => {
     if (!user) throw new Error('No autenticado');
-    await db.deleteLoanPayment(paymentId, { ...loan, userId: user.id }, loan.totalPaid ?? 0, paymentAmount);
+    await runOrQueue('deleteLoanPayment', [paymentId, { ...loan, userId: user.id }, loan.totalPaid ?? 0, paymentAmount]);
     await Promise.all([refreshLoans(), refreshTransactions()]);
   };
 

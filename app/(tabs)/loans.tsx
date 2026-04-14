@@ -228,11 +228,19 @@ export default function LoansScreen() {
                 {dueDate.toLocaleDateString()}
               </Text>
             )}
-            <TouchableOpacity onPress={() => handleEdit(item)} hitSlop={8}>
-              <Ionicons name="create-outline" size={18} color={theme.textMuted} />
+            <TouchableOpacity
+              style={[styles.iconBtn, { backgroundColor: theme.tintLight }]}
+              onPress={() => handleEdit(item)}
+              hitSlop={8}
+              activeOpacity={0.7}>
+              <Ionicons name="pencil-outline" size={16} color={theme.tint} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDelete(item)} hitSlop={8}>
-              <Ionicons name="trash-outline" size={18} color={theme.textMuted} />
+            <TouchableOpacity
+              style={[styles.iconBtn, { backgroundColor: theme.expenseBg }]}
+              onPress={() => handleDelete(item)}
+              hitSlop={8}
+              activeOpacity={0.7}>
+              <Ionicons name="trash-outline" size={16} color={theme.expense} />
             </TouchableOpacity>
           </View>
         </View>
@@ -500,7 +508,8 @@ const styles = StyleSheet.create({
   },
   statusText: { fontSize: 11, fontWeight: '600' },
   accountLabel: { fontSize: 11 },
-  loanActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  loanActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  iconBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   reminderBadge: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   reminderText: { fontSize: 10, fontWeight: '500' },
   dueDateText: { fontSize: 11 },

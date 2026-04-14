@@ -195,18 +195,22 @@ export function AddSubscriptionModal({
             {/* Categoría (opcional) */}
             <View style={styles.section}>
               <Text style={[styles.label, { color: theme.textSecondary }]}>Categoría (opcional)</Text>
-              <View style={styles.grid}>
+              <View style={styles.catGrid}>
                 <TouchableOpacity
                   style={[
-                    styles.gridOption,
+                    styles.catBtn,
                     {
-                      backgroundColor: !categoryId ? theme.tintLight : theme.divider,
+                      backgroundColor: !categoryId ? theme.card : theme.divider,
                       borderColor: !categoryId ? theme.tint : 'transparent',
                     },
                   ]}
                   onPress={() => setCategoryId(null)}>
-                  <Ionicons name="remove-circle-outline" size={16} color={!categoryId ? theme.tint : theme.textSecondary} />
-                  <Text style={[styles.gridLabel, { color: !categoryId ? theme.tint : theme.textSecondary }]}>
+                  <View style={[styles.catIcon, { backgroundColor: `${theme.textMuted}22` }]}>
+                    <Ionicons name="remove-circle-outline" size={22} color={theme.textMuted} />
+                  </View>
+                  <Text
+                    style={[styles.catText, { color: theme.text, fontWeight: !categoryId ? '700' : '600' }]}
+                    numberOfLines={1}>
                     Ninguna
                   </Text>
                 </TouchableOpacity>
@@ -216,16 +220,22 @@ export function AddSubscriptionModal({
                     <TouchableOpacity
                       key={cat.id}
                       style={[
-                        styles.gridOption,
+                        styles.catBtn,
                         {
-                          backgroundColor: selected ? theme.tintLight : theme.divider,
-                          borderColor: selected ? theme.tint : 'transparent',
+                          backgroundColor: selected ? theme.card : theme.divider,
+                          borderColor: selected ? cat.color : 'transparent',
                         },
                       ]}
                       onPress={() => setCategoryId(cat.id)}>
-                      <Ionicons name={cat.icon as any} size={16} color={selected ? theme.tint : cat.color} />
+                      <View
+                        style={[
+                          styles.catIcon,
+                          { backgroundColor: `${cat.color}${selected ? '30' : '18'}` },
+                        ]}>
+                        <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+                      </View>
                       <Text
-                        style={[styles.gridLabel, { color: selected ? theme.tint : theme.textSecondary }]}
+                        style={[styles.catText, { color: theme.text, fontWeight: selected ? '700' : '600' }]}
                         numberOfLines={1}>
                         {cat.name}
                       </Text>
@@ -302,6 +312,10 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   gridOption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, minWidth: '45%' },
   gridLabel: { fontSize: 13, fontWeight: '600' },
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
+  catBtn: { width: '30%', minWidth: 88, alignItems: 'center', padding: 10, borderRadius: 14, borderWidth: 1.5 },
+  catIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
+  catText: { fontSize: 11, textAlign: 'center' },
   cardDot: { width: 12, height: 12, borderRadius: 6 },
   footer: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1 },
   btn: { flex: 1, padding: 15, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

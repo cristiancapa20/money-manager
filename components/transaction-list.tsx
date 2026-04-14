@@ -400,8 +400,14 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
     month:   rawDate.toLocaleDateString('es-EC', { month: 'short' }).replace('.', '').toUpperCase(),
   } : null;
 
+  const canEdit = !!onEdit && !transaction.managedViaLoans && !transaction.managedViaSubscriptions;
+
   return (
-    <View style={[styles.item, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <TouchableOpacity
+      style={[styles.item, { backgroundColor: theme.card, borderColor: theme.border }]}
+      onPress={canEdit ? () => onEdit!(transaction) : undefined}
+      disabled={!canEdit}
+      activeOpacity={canEdit ? 0.7 : 1}>
 
       {dateParts && (
         <View style={[styles.datePanelOuter, { backgroundColor: theme.divider, borderRightColor: theme.border }]}>
@@ -459,17 +465,9 @@ function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
             )}
           </View>
 
-          {onEdit && !transaction.managedViaLoans && !transaction.managedViaSubscriptions && (
-            <TouchableOpacity
-              style={[styles.editBtn, { backgroundColor: theme.tintLight }]}
-              onPress={() => onEdit(transaction)}
-              activeOpacity={0.7}>
-              <Ionicons name="pencil-outline" size={14} color={theme.tint} />
-            </TouchableOpacity>
-          )}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

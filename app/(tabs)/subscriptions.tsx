@@ -193,11 +193,12 @@ export default function SubscriptionsScreen() {
           </View>
 
           <View style={styles.cardActions}>
-            <TouchableOpacity onPress={() => handleEdit(item)} hitSlop={8}>
-              <Ionicons name="create-outline" size={18} color={theme.textMuted} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDelete(item)} hitSlop={8}>
-              <Ionicons name="trash-outline" size={18} color={theme.textMuted} />
+            <TouchableOpacity
+              style={[styles.iconBtn, { backgroundColor: theme.expenseBg }]}
+              onPress={() => handleDelete(item)}
+              hitSlop={8}
+              activeOpacity={0.7}>
+              <Ionicons name="trash-outline" size={16} color={theme.expense} />
             </TouchableOpacity>
           </View>
         </View>
@@ -439,7 +440,8 @@ const styles = StyleSheet.create({
   categoryTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   categoryDot: { width: 8, height: 8, borderRadius: 4 },
   categoryLabel: { fontSize: 11 },
-  cardActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  iconBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   processBanner: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -369,11 +369,11 @@ export default function LoansScreen() {
                 <Ionicons
                   name={f.icon as any}
                   size={15}
-                  color={active ? theme.tint : theme.textMuted}
+                  color={active ? theme.tint : theme.textSecondary}
                 />
                 <Text style={[
                   styles.segmentedText,
-                  { color: active ? theme.text : theme.textSecondary },
+                  { color: active ? theme.text : theme.text },
                   active && { fontWeight: '700' },
                 ]}>
                   {f.label}
@@ -384,7 +384,7 @@ export default function LoansScreen() {
                 ]}>
                   <Text style={[
                     styles.countText,
-                    { color: active ? theme.tint : theme.textMuted },
+                    { color: active ? theme.tint : theme.textSecondary },
                   ]}>
                     {loanCounts.byType[f.value]}
                   </Text>
@@ -411,11 +411,11 @@ export default function LoansScreen() {
                 <Ionicons
                   name={f.icon as any}
                   size={15}
-                  color={active ? theme.tint : theme.textMuted}
+                  color={active ? theme.tint : theme.textSecondary}
                 />
                 <Text style={[
                   styles.segmentedText,
-                  { color: active ? theme.text : theme.textSecondary },
+                  { color: active ? theme.text : theme.text },
                   active && { fontWeight: '700' },
                 ]}>
                   {f.label}
@@ -426,7 +426,7 @@ export default function LoansScreen() {
                 ]}>
                   <Text style={[
                     styles.countText,
-                    { color: active ? theme.tint : theme.textMuted },
+                    { color: active ? theme.tint : theme.textSecondary },
                   ]}>
                     {loanCounts.byStatus[f.value]}
                   </Text>

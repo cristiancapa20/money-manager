@@ -258,7 +258,7 @@ function FilterPanel({
               ? opt.key === 'INCOME' ? theme.income
               : opt.key === 'EXPENSE' ? theme.expense
               : theme.tint
-              : theme.textMuted;
+              : theme.text;
 
             return (
               <TouchableOpacity
@@ -286,7 +286,7 @@ function FilterPanel({
             onPress={() => setCategoryFilter(null)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.chipText, { color: !categoryFilter ? theme.tint : theme.textMuted, fontWeight: !categoryFilter ? '700' : '500' }]}>
+            <Text style={[styles.chipText, { color: !categoryFilter ? theme.tint : theme.text, fontWeight: !categoryFilter ? '700' : '500' }]}>
               Todas
             </Text>
           </TouchableOpacity>
@@ -299,9 +299,9 @@ function FilterPanel({
                 onPress={() => setCategoryFilter(active ? null : cat.id)}
                 activeOpacity={0.7}
               >
-                <Ionicons name={cat.icon as any} size={13} color={active ? cat.color : theme.textMuted} />
+                <Ionicons name={cat.icon as any} size={13} color={active ? cat.color : theme.textSecondary} />
                 <Text
-                  style={[styles.chipText, { color: active ? cat.color : theme.textMuted, fontWeight: active ? '700' : '500' }]}
+                  style={[styles.chipText, { color: active ? cat.color : theme.text, fontWeight: active ? '700' : '500' }]}
                   numberOfLines={1}
                 >
                   {cat.name}
@@ -325,7 +325,7 @@ function FilterPanel({
                 onPress={() => setDatePreset(opt.key)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.chipText, { color: active ? theme.tint : theme.textMuted, fontWeight: active ? '700' : '500' }]}>
+                <Text style={[styles.chipText, { color: active ? theme.tint : theme.text, fontWeight: active ? '700' : '500' }]}>
                   {opt.label}
                 </Text>
               </TouchableOpacity>

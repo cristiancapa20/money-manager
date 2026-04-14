@@ -1,5 +1,6 @@
 import { AddLoanModal } from '@/components/add-loan-modal';
 import { LoanDetailModal } from '@/components/loan-detail-modal';
+import { SuccessOverlay } from '@/components/success-overlay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
@@ -10,9 +11,9 @@ import type { Loan, LoanType } from '@/types/loan';
 import { LOAN_TYPE_LABELS, LOAN_TYPE_ICONS, LOAN_STATUS_LABELS } from '@/types/loan';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import LottieView from 'lottie-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   RefreshControl,
@@ -22,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -104,6 +106,7 @@ export default function LoansScreen() {
   const [detailLoan, setDetailLoan] = useState<Loan | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const filteredLoans = useMemo(() => {
     let result = loans;
@@ -143,6 +146,7 @@ export default function LoansScreen() {
       }
       setModalVisible(false);
       setEditingLoan(null);
+      setShowSuccess(true);
     } catch (err: any) {
       Alert.alert('Error', err.message);
     }
@@ -309,7 +313,12 @@ export default function LoansScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={theme.tint} />
+        <LottieView
+          source={require('@/assets/animations/loading.json')}
+          autoPlay
+          loop
+          style={styles.lottieLoading}
+        />
       </ThemedView>
     );
   }
@@ -432,14 +441,23 @@ export default function LoansScreen() {
       <FlatList
         data={filteredLoans}
         keyExtractor={(item) => item.id}
-        renderItem={renderLoanItem}
+        renderItem={(info) => (
+          <Animated.View entering={FadeInDown.delay(info.index * 50).duration(300).springify()}>
+            {renderLoanItem(info)}
+          </Animated.View>
+        )}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.tint} />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="cash-outline" size={48} color={theme.textMuted} />
+            <LottieView
+              source={require('@/assets/animations/wallet-empty.json')}
+              autoPlay
+              loop
+              style={styles.lottieEmpty}
+            />
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>
               No hay préstamos registrados
             </Text>
@@ -464,6 +482,8 @@ export default function LoansScreen() {
         loan={detailLoan}
         cards={cards}
       />
+
+      <SuccessOverlay visible={showSuccess} onFinish={() => setShowSuccess(false)} />
     </ThemedView>
   );
 }
@@ -569,7 +589,9 @@ const styles = StyleSheet.create({
   reminderBadge: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   reminderText: { fontSize: 10, fontWeight: '500' },
   dueDateText: { fontSize: 11 },
-  emptyState: { alignItems: 'center', paddingTop: 60, gap: 8 },
+  lottieLoading: { width: 120, height: 120 },
+  lottieEmpty: { width: 150, height: 150 },
+  emptyState: { alignItems: 'center', paddingTop: 40, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '600' },
   emptySubtext: { fontSize: 13 },
 });

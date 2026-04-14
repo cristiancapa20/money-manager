@@ -9,7 +9,8 @@ import { useCurrency } from '@/hooks/use-currency';
 import type { Loan, LoanType } from '@/types/loan';
 import { LOAN_TYPE_LABELS, LOAN_TYPE_ICONS, LOAN_STATUS_LABELS } from '@/types/loan';
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,10 +21,74 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type FilterType = 'ALL' | 'LENT' | 'OWED';
 type StatusFilter = 'ALL' | 'ACTIVE' | 'PAID';
+
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+
+function AnimatedProgressBar({ percent, color, gradientEnd }: { percent: number; color: string; gradientEnd: string }) {
+  const width = useSharedValue(0);
+
+  useEffect(() => {
+    width.value = withDelay(200, withTiming(percent, { duration: 600 }));
+  }, [percent]);
+
+  const barStyle = useAnimatedStyle(() => ({
+    width: `${width.value}%` as any,
+  }));
+
+  return (
+    <View style={progressStyles.container}>
+      <View style={progressStyles.track}>
+        <Animated.View style={[progressStyles.fill, barStyle]}>
+          <LinearGradient
+            colors={[color, gradientEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      </View>
+      <Text style={[progressStyles.label, { color }]}>
+        {Math.round(percent)}%
+      </Text>
+    </View>
+  );
+}
+
+const progressStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  track: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(128,128,128,0.15)',
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+    minWidth: 32,
+    textAlign: 'right',
+  },
+});
 
 export default function LoansScreen() {
   const scheme = useColorScheme() ?? 'light';
@@ -179,19 +244,12 @@ export default function LoansScreen() {
           </View>
         </View>
 
-        {/* Progress bar */}
         {(item.totalPaid ?? 0) > 0 && (
-          <View style={[styles.loanProgressBar, { backgroundColor: theme.divider }]}>
-            <View
-              style={[
-                styles.loanProgressFill,
-                {
-                  width: `${Math.min(((item.totalPaid ?? 0) / item.amount) * 100, 100)}%`,
-                  backgroundColor: color,
-                },
-              ]}
-            />
-          </View>
+          <AnimatedProgressBar
+            percent={Math.min(((item.totalPaid ?? 0) / item.amount) * 100, 100)}
+            color={color}
+            gradientEnd={isLent ? '#34d399' : '#f87171'}
+          />
         )}
 
         <View style={styles.loanFooter}>
@@ -423,7 +481,7 @@ const styles = StyleSheet.create({
   addBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -493,8 +551,6 @@ const styles = StyleSheet.create({
   loanAmounts: { alignItems: 'flex-end' },
   loanAmount: { fontSize: 16, fontWeight: '700' },
   loanBalance: { fontSize: 11, marginTop: 2 },
-  loanProgressBar: { height: 4, borderRadius: 2, overflow: 'hidden', marginBottom: 10 },
-  loanProgressFill: { height: '100%', borderRadius: 2 },
   loanFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -509,7 +565,7 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontWeight: '600' },
   accountLabel: { fontSize: 11 },
   loanActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  iconBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  iconBtn: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   reminderBadge: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   reminderText: { fontSize: 10, fontWeight: '500' },
   dueDateText: { fontSize: 11 },

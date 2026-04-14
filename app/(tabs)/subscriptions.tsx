@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   addBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   categoryDot: { width: 8, height: 8, borderRadius: 4 },
   categoryLabel: { fontSize: 11 },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  iconBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  iconBtn: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   processBanner: {
     flexDirection: 'row',
     alignItems: 'center',

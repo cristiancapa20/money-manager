@@ -153,8 +153,12 @@ export function LoanDetailModal({ visible, onClose, loan, cards }: LoanDetailMod
             {item.accountName}
           </Text>
         )}
-        <TouchableOpacity onPress={() => handleDeletePayment(item)} hitSlop={8}>
-          <Ionicons name="trash-outline" size={16} color={theme.textMuted} />
+        <TouchableOpacity
+          style={[styles.deleteBtn, { backgroundColor: theme.expenseBg }]}
+          onPress={() => handleDeletePayment(item)}
+          hitSlop={8}
+          activeOpacity={0.7}>
+          <Ionicons name="trash-outline" size={16} color={theme.expense} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -284,7 +288,7 @@ const styles = StyleSheet.create({
   // Payments
   paymentsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1 },
   paymentsTitle: { fontSize: 16, fontWeight: '700' },
-  addPaymentBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  addPaymentBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
   addPaymentText: { color: '#fff', fontSize: 13, fontWeight: '600' },
 
   paymentsList: { paddingHorizontal: 20, paddingBottom: 20 },
@@ -296,6 +300,7 @@ const styles = StyleSheet.create({
   paymentNote: { fontSize: 11, marginTop: 1 },
   paymentActions: { alignItems: 'flex-end', gap: 6 },
   paymentAccount: { fontSize: 11 },
+  deleteBtn: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
 
   loader: { paddingVertical: 40 },
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 8 },

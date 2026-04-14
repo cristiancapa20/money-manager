@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     top: -24,
   },
   ring: {
-    borderRadius: 40,
+    borderRadius: 18,
     borderWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   circle: {
     width: 58,
     height: 58,
-    borderRadius: 29,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#4f46e5',
